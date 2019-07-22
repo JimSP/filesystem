@@ -1,0 +1,44 @@
+package br.com.comexport.filesystem;
+
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.BiPredicate;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import lombok.SneakyThrows;
+
+@Component
+public class HazelcastFileSystem {
+
+    private static final String PREFIX = "/";
+    @Autowired
+    private FileSystem fileSystem;
+
+    public Path resolveName(final String filePath) {
+        if (filePath.startsWith(PREFIX)) {
+            return fileSystem.getPath(filePath);
+        }
+
+        return fileSystem.getPath(PREFIX + filePath);
+
+    }
+
+    @SneakyThrows
+    public Stream<Path> find(final String name,
+            final BiPredicate<Path, BasicFileAttributes> matcher) {
+
+        return Files.find(resolveName(name), 1, matcher);
+    }
+    
+    @SneakyThrows
+    public Stream<Path> find(final String name, final Integer maxDepth ,
+            final BiPredicate<Path, BasicFileAttributes> matcher) {
+
+        return Files.find(resolveName(name), maxDepth, matcher);
+    }
+}
