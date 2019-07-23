@@ -34,7 +34,7 @@ public class FileSystemSearchAPI {
     public @ResponseBody List<String> findNameContains(@PathVariable(name = "name", required = true) final List<String> path,
             @PathVariable(name = "maxDepth", required = false) final Integer maxDepth) {
 
-        return fileService.find(Optional.ofNullable(maxDepth).orElse(0), reduce(path));
+        return fileService.find(Optional.ofNullable(maxDepth).orElse(FilesService.DEFAULT_DEPTH), reduce(path));
     }
 
     @GetMapping(path = "/engine/grep/{path}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)

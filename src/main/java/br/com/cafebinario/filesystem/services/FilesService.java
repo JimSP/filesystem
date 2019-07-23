@@ -25,7 +25,9 @@ import br.com.cafebinario.logger.VerboseMode;
 @Service
 public class FilesService {
 
-	private static final String INVALID_VALUE = "invalid value for path: ";
+	public static final int DEFAULT_DEPTH = 1;
+
+    private static final String INVALID_VALUE = "invalid value for path: ";
 
 	@Autowired
 	private HazelcastFileSystem hazelcastFileSystem;
@@ -92,13 +94,13 @@ public class FilesService {
 	@Log
 	public List<String> grep(final String path, final String keyword) {
 		
-		return pathStreamConverter(streamOf(0, path).filter(containsData(keyword)));
+		return pathStreamConverter(streamOf(DEFAULT_DEPTH, path).filter(containsData(keyword)));
 	}
 	
 	@Log
 	public List<String> grep(final String path, final byte[] keyword) {
 		
-		return pathStreamConverter(streamOf(0, path).filter(containsData(keyword)));
+		return pathStreamConverter(streamOf(DEFAULT_DEPTH, path).filter(containsData(keyword)));
 	}
 
 	@Log(verboseMode=VerboseMode.ON, logLevel=LogLevel.DEBUG)
