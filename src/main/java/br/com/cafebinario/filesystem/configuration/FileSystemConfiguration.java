@@ -1,4 +1,4 @@
-package br.com.comexport.filesystem.configuration;
+package br.com.cafebinario.filesystem.configuration;
 
 import java.io.File;
 import java.nio.file.FileSystem;
@@ -26,7 +26,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
-import br.com.comexport.filesystem.mapper.PathToFtpFileMapper;
+import br.com.cafebinario.filesystem.mapper.PathToFtpFileMapper;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration

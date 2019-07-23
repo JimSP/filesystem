@@ -9,7 +9,7 @@
 		<version>2.1.6.RELEASE</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>br.com.comexport</groupId>
+	<groupId>br.com.cafebinario</groupId>
 	<artifactId>filesystem</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>filesystem</name>

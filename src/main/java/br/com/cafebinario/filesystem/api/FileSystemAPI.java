@@ -1,4 +1,4 @@
-package br.com.comexport.filesystem.api;
+package br.com.cafebinario.filesystem.api;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.comexport.filesystem.services.FilesService;
+import br.com.cafebinario.filesystem.services.FilesService;
 
 @RestController
 public class FileSystemAPI {

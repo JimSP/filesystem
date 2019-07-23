@@ -1,4 +1,4 @@
-package br.com.comexport.filesystem.api;
+package br.com.cafebinario.filesystem.api;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
