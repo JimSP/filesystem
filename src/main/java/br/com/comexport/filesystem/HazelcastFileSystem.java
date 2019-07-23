@@ -16,6 +16,7 @@ import lombok.SneakyThrows;
 public class HazelcastFileSystem {
 
     private static final String PREFIX = "/";
+
     @Autowired
     private FileSystem fileSystem;
 

@@ -88,18 +88,13 @@ public class FileSystemConfiguration {
 
         final CommandFactory commandFactory = serverFactory.getCommandFactory();
         
-        serverFactory.setCommandFactory(mergeCommandFactory(commandFactory, newCommandFactory));
+        serverFactory.setCommandFactory(commandFactory);
+        
         final FtpServer ftpServer = serverFactory.createServer();
 
         ftpServer.start();
 
         return ftpServer;
-    }
-
-    private CommandFactory mergeCommandFactory(final CommandFactory commandFactory,
-            final CommandFactory newCommandFactory) {
-
-        return commandFactory;
     }
 
     @Bean
@@ -120,7 +115,8 @@ public class FileSystemConfiguration {
     }
 
     @Bean
-    public FileSystemFactory fileSystemFactory(@Autowired final FileSystem fileSystem,
+    public FileSystemFactory fileSystemFactory(
+    		@Autowired final FileSystem fileSystem,
             @Autowired final PathToFtpFileMapper pathToFtpFileMapper) {
 
         return user -> new FileSystemView() {
