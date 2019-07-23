@@ -1,4 +1,4 @@
-package br.com.cafebinario.filesystem.mapper;
+package br.com.cafebinario.filesystem.mappers;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -17,7 +17,7 @@ import org.springframework.util.Assert;
 import com.google.common.primitives.Bytes;
 
 import br.com.cafebinario.filesystem.HazelcastFileSystem;
-import br.com.cafebinario.filesystem.api.EntryDTO;
+import br.com.cafebinario.filesystem.api.dto.EntryDTO;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
 import br.com.cafebinario.logger.VerboseMode;
