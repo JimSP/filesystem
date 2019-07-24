@@ -11,3 +11,15 @@ Interface Rest e FTP.
 Permite pesquisa com palavras chaves e parte de conteudo multi-midia.
 
 ![Optional Text](cafebinario_vfs.png)
+
+
+## Road map:
+
+	+ implementação de FileWacther com mecanismo de notificação por webhook através de topicos.
+	+ implementação de controle de acesso RBAC com LDAP
+	+ integração com document-propagation
+	+ integração com apache-mina sshd
+	+ implementação de API para busca de atributos
+	+ melhoria na engine de busca (QueryBuilder com opção para atributos)
+	+ integração com spring-boot-starter-data
+	
