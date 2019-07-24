@@ -1,13 +1,15 @@
 package br.com.cafebinario.filesystem.services;
 
-import static br.com.cafebinario.filesystem.functions.Contains.containsData;
 import static br.com.cafebinario.filesystem.functions.Contains.contains;
-
+import static br.com.cafebinario.filesystem.functions.Contains.containsData;
 import static br.com.cafebinario.filesystem.functions.IndexOf.indexOf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -129,6 +131,19 @@ public class FilesService {
 						.path(path)
 						.build())
 				.collect(Collectors.toList());
+	}
+	
+	@Log
+	public Integer edit(final String path, final Integer position, final byte[] data) {
+		try (final FileChannel fc = FileChannel.open(getPath(path), StandardOpenOption.READ,
+				StandardOpenOption.WRITE)) {
+
+			fc.position(position);
+
+			return fc.write(ByteBuffer.wrap(data));
+		} catch (IOException ex) {
+			throw new IllegalArgumentException(INVALID_VALUE + path);
+		}
 	}
 	
 	@Log(verboseMode = VerboseMode.ON, logLevel = LogLevel.DEBUG)
