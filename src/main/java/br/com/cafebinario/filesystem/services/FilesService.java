@@ -29,6 +29,8 @@ import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.EntryDTO;
 import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 import br.com.cafebinario.filesystem.dtos.SearchDTO;
+import br.com.cafebinario.filesystem.dtos.UpdatableEntryDTO;
+import br.com.cafebinario.filesystem.dtos.UpdateDTO;
 import br.com.cafebinario.filesystem.listener.FileSystemWatcherEventMessageListener;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
@@ -203,6 +205,45 @@ public class FilesService {
         } catch (IOException ex) {
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
+    }
+    
+    @Log
+    public Integer update(final UpdateDTO updateDTO) {
+        
+        final String path = updateDTO.getPath();
+        
+        return updateDTO.getUpdatableEntrys()
+            .stream()
+            .map(updatableEntryDTO->update(path, updatableEntryDTO.getKeyword(), updatableEntryDTO.getData()))
+            .reduce((a,b) -> a + b)
+            .orElse(0);
+    }
+    
+    @Log
+    public Integer update(final String path, final byte[] keyword, final byte[] data) {
+
+        final List<SearchDTO> serSearchDTOs = index(path, keyword);
+
+        return serSearchDTOs
+                .stream()
+                .map(searchDTO -> {
+
+                    final Integer position = searchDTO.getIndexOf();
+
+                    return edit(getPath(path),
+                            EditableEntryDTO
+                                .builder()
+                                .position(position)
+                                .data(data)
+                                .build());
+        }).reduce((a,b)->a+b)
+            .orElse(0);
+    }
+    
+    @Log
+    public void update(final String path, final String keyword, final String data) {
+
+        update(path, keyword.getBytes(), data.getBytes());
     }
 
     @Log

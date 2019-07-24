@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.cafebinario.filesystem.dtos.EditDTO;
 import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
+import br.com.cafebinario.filesystem.dtos.UpdatableEntryDTO;
+import br.com.cafebinario.filesystem.dtos.UpdateDTO;
 import br.com.cafebinario.filesystem.services.FilesService;
 
 @RestController
@@ -57,4 +59,37 @@ public class FileSystemEditDocumentAPI {
 				.editableEntrys(Arrays.asList(editableEntryDTO))
 				.build());
 	}
+
+	@PutMapping(path = "/update", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @ResponseStatus(code = HttpStatus.ACCEPTED)
+    public @ResponseBody Integer update(
+            @RequestBody final UpdateDTO updateDTO) {
+
+        return filesService.update(updateDTO);
+    }
+    
+    @PutMapping(path = "/update/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @ResponseStatus(code = HttpStatus.ACCEPTED)
+    public @ResponseBody Integer update(@PathVariable(name = "path", required = true) final List<String> path,
+            @RequestBody final List<UpdatableEntryDTO> updatableEntryDTOs) {
+
+        return filesService.update(UpdateDTO
+                .builder()
+                .path(reduce(path))
+                .updatableEntrys(updatableEntryDTOs)
+                .build());
+    }
+    
+    @PutMapping(path = "/update/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @ResponseStatus(code = HttpStatus.ACCEPTED)
+    public @ResponseBody Integer update(
+            @PathVariable(name = "path", required = true) final List<String> path,
+            @RequestBody final UpdatableEntryDTO updatableEntryDTO) {
+
+        return filesService.update(UpdateDTO
+                .builder()
+                .path(reduce(path))
+                .updatableEntrys(Arrays.asList(updatableEntryDTO))
+                .build());
+    }
 }
