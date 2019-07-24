@@ -29,7 +29,6 @@ import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.EntryDTO;
 import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 import br.com.cafebinario.filesystem.dtos.SearchDTO;
-import br.com.cafebinario.filesystem.dtos.UpdatableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.UpdateDTO;
 import br.com.cafebinario.filesystem.listener.FileSystemWatcherEventMessageListener;
 import br.com.cafebinario.logger.Log;
