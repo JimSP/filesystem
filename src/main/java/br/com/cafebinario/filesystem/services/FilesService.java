@@ -66,7 +66,11 @@ public class FilesService {
     public EntryDTO get(final String path) {
         try {
 
-            return EntryDTO.builder().path(path).data(Files.readAllBytes(getPath(path))).build();
+            return EntryDTO
+                    .builder()
+                    .path(path)
+                    .data(Files.readAllBytes(getPath(path)))
+                    .build();
         } catch (IOException e) {
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
@@ -121,8 +125,13 @@ public class FilesService {
         return streamOf(DEFAULT_DEPTH, path)
                 .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
                         keyword))
-                .filter(indexOf -> indexOf > -1).map(indexOf -> SearchDTO.builder().indexOf(indexOf)
-                        .keyword(keyword.getBytes()).path(path).build())
+                .filter(indexOf -> indexOf > -1)
+                .map(indexOf -> SearchDTO
+                        .builder()
+                        .indexOf(indexOf)
+                        .keyword(keyword.getBytes())
+                        .path(path)
+                        .build())
                 .collect(Collectors.toList());
     }
 
@@ -132,8 +141,13 @@ public class FilesService {
         return streamOf(DEFAULT_DEPTH, path)
                 .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
                         keyword))
-                .filter(indexOf -> indexOf > -1).map(indexOf -> SearchDTO.builder().indexOf(indexOf)
-                        .keyword(keyword).path(path).build())
+                .filter(indexOf -> indexOf > -1)
+                .map(indexOf -> SearchDTO
+                        .builder()
+                        .indexOf(indexOf)
+                        .keyword(keyword)
+                        .path(path)
+                        .build())
                 .collect(Collectors.toList());
     }
 
@@ -142,7 +156,11 @@ public class FilesService {
 
         return edit(EditDTO.builder().path(path)
                 .editableEntrys(Arrays
-                        .asList(EditableEntryDTO.builder().position(position).data(data).build()))
+                        .asList(EditableEntryDTO
+                                .builder()
+                                .position(position)
+                                .data(data)
+                                .build()))
                 .build());
     }
 
@@ -152,7 +170,8 @@ public class FilesService {
         final Path path = getPath(editDTO.getPath());
 
         return editDTO.getEditableEntrys().stream()
-                .map(editableEntryDTO -> edit(path, editableEntryDTO)).reduce((a, b) -> a + b)
+                .map(editableEntryDTO -> edit(path, editableEntryDTO))
+                .reduce((a, b) -> a + b)
                 .orElse(0);
     }
 
