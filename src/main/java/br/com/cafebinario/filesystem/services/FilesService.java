@@ -52,7 +52,6 @@ public class FilesService {
 
     @Log
     public String save(final EntryDTO entryDTO) {
-
         try {
 
             final Path path = getPath(entryDTO.getPath());
@@ -65,7 +64,6 @@ public class FilesService {
 
     @Log
     public EntryDTO get(final String path) {
-
         try {
 
             return EntryDTO.builder().path(path).data(Files.readAllBytes(getPath(path))).build();
@@ -76,7 +74,6 @@ public class FilesService {
 
     @Log
     public String delete(final String path) {
-
         try {
 
             return Files.deleteIfExists(getPath(path)) ? path : null;
@@ -161,7 +158,7 @@ public class FilesService {
 
     @Log
     public Integer edit(final Path path, final EditableEntryDTO editableEntryDTO) {
-
+        
         try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
                 StandardOpenOption.WRITE)) {
 
@@ -179,7 +176,8 @@ public class FilesService {
         try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
                 StandardOpenOption.WRITE)) {
 
-            return editableEntryDTOs.stream()
+            return editableEntryDTOs
+                    .stream()
                     .map(editableEntryDTO -> edit(path, fc, editableEntryDTO))
                     .reduce((a, b) -> a + b).orElse(0);
 
@@ -210,13 +208,17 @@ public class FilesService {
 
     private List<String> pathStreamConverter(final Stream<Path> stream) {
 
-        return stream.map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toList());
+        return stream
+                .map(Path::toAbsolutePath)
+                .map(Path::toString)
+                .collect(Collectors.toList());
     }
 
     private Integer edit(final Path path, final FileChannel fc,
             final EditableEntryDTO editableEntryDTO) {
 
         try {
+            
             fc.position(editableEntryDTO.getPosition());
             return fc.write(ByteBuffer.wrap(editableEntryDTO.getData()));
         } catch (IOException e) {
@@ -225,14 +227,22 @@ public class FilesService {
     }
 
     private void registerWatcher(final String path, final URL url) {
+        
         final ITopic<NotifyDTO> topic = hazelcastInstance.getReliableTopic(path);
+        
         topic.addMessageListener(fileSystemWatcherEventMessageListener);
 
-        hazelcastFileSystem.wacther(path, (event, monitoredPath) -> topic.publish(NotifyDTO
-                .builder().path(monitoredPath).kind(event.getKind().name()).url(url).build()));
+        hazelcastFileSystem.wacther(path, (event, monitoredPath) 
+                -> topic.publish(NotifyDTO
+                                    .builder()
+                                    .path(monitoredPath)
+                                    .kind(event.getKind().name())
+                                    .url(url)
+                                    .build()));
     }
 
     private void registerPath(final String path) {
+        
         final List<String> registredsPath = hazelcastInstance.getList("watcher-register");
 
         final int indexOf = registredsPath.indexOf(path);
