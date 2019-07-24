@@ -4,12 +4,15 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import br.com.cafebinario.filesystem.watcher.FileWatcher;
+import br.com.cafebinario.filesystem.watcher.WatcherEvent;
 import lombok.SneakyThrows;
 
 @Component
@@ -41,5 +44,15 @@ public class HazelcastFileSystem {
             final BiPredicate<Path, BasicFileAttributes> matcher) {
 
         return Files.find(resolveName(name), maxDepth, matcher);
+    }
+    
+    @SneakyThrows
+    public void wacther(final String filePath, final BiConsumer<WatcherEvent, String> fileConsumer) {
+    	
+    	final FileWatcher fileWatcher = FileWatcher.of();
+		
+    	fileWatcher.registerConsumerAllEvents(resolveName(filePath), fileConsumer);
+		
+		fileWatcher.start();
     }
 }
