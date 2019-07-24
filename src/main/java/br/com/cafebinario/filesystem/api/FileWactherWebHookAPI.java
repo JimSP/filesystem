@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.cafebinario.filesystem.dto.NotifyDTO;
+import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 
 @RestController
 public class FileWactherWebHookAPI {

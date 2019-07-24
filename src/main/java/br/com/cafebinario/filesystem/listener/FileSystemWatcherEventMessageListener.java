@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
-import br.com.cafebinario.filesystem.dto.NotifyDTO;
+import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 import br.com.cafebinario.filesystem.functions.HttpPutNotifySender;
 
 @Component

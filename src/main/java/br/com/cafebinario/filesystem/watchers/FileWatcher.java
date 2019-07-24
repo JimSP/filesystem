@@ -1,5 +1,5 @@
 
-package br.com.cafebinario.filesystem.watcher;
+package br.com.cafebinario.filesystem.watchers;
 
 import java.io.Closeable;
 import java.io.File;

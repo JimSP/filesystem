@@ -1,4 +1,4 @@
-package br.com.cafebinario.filesystem.dto;
+package br.com.cafebinario.filesystem.dtos;
 
 import java.util.List;
 

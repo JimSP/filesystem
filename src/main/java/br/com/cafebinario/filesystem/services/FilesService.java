@@ -24,11 +24,11 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
 
 import br.com.cafebinario.filesystem.HazelcastFileSystem;
-import br.com.cafebinario.filesystem.dto.EditDTO;
-import br.com.cafebinario.filesystem.dto.EditableEntryDTO;
-import br.com.cafebinario.filesystem.dto.EntryDTO;
-import br.com.cafebinario.filesystem.dto.NotifyDTO;
-import br.com.cafebinario.filesystem.dto.SearchDTO;
+import br.com.cafebinario.filesystem.dtos.EditDTO;
+import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
+import br.com.cafebinario.filesystem.dtos.EntryDTO;
+import br.com.cafebinario.filesystem.dtos.NotifyDTO;
+import br.com.cafebinario.filesystem.dtos.SearchDTO;
 import br.com.cafebinario.filesystem.listener.FileSystemWatcherEventMessageListener;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
@@ -205,6 +205,7 @@ public class FilesService {
         }
     }
 
+    @Log
     public void watcher(final String path, final URL url) {
 
         registerPath(path);

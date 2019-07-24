@@ -1,4 +1,4 @@
-package br.com.cafebinario.filesystem.watcher;
+package br.com.cafebinario.filesystem.watchers;
 
 import lombok.Builder;
 import lombok.Data;

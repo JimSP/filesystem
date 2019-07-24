@@ -11,8 +11,8 @@ import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import br.com.cafebinario.filesystem.watcher.FileWatcher;
-import br.com.cafebinario.filesystem.watcher.WatcherEvent;
+import br.com.cafebinario.filesystem.watchers.FileWatcher;
+import br.com.cafebinario.filesystem.watchers.WatcherEvent;
 import lombok.SneakyThrows;
 
 @Component
