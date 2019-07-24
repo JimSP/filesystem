@@ -56,4 +56,24 @@ public class FileSystemSearchAPI {
 
         return fileService.grep(reduce(path), keyword);
     }
+    
+    @GetMapping(path = "/engine/index/{path}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public @ResponseBody List<SearchDTO> indexOf(@PathVariable(name = "path", required = true) final List<String> path,
+            @RequestParam(name = "keyword", required = true) final String keyword) {
+
+        return fileService.index(reduce(path), keyword);
+    }
+    
+    @PostMapping(path = "/engine/index", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public @ResponseBody List<SearchDTO> indexOf(@RequestBody final SearchDTO searchDTO) {
+
+        return fileService.index(searchDTO.getPath(), searchDTO.getKeyword());
+    }
+    
+    @PostMapping(path = "/engine/index/{path}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public @ResponseBody List<SearchDTO> indexOf(@PathVariable(name = "path", required = true) final List<String> path,
+            @RequestBody final byte[] keyword) {
+
+        return fileService.index(reduce(path), keyword);
+    }
 }

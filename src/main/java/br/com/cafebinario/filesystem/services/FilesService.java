@@ -3,6 +3,8 @@ package br.com.cafebinario.filesystem.services;
 import static br.com.cafebinario.filesystem.functions.Contains.containsData;
 import static br.com.cafebinario.filesystem.functions.Contains.contains;
 
+import static br.com.cafebinario.filesystem.functions.IndexOf.indexOf;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +18,7 @@ import org.springframework.util.Assert;
 
 import br.com.cafebinario.filesystem.HazelcastFileSystem;
 import br.com.cafebinario.filesystem.api.dto.EntryDTO;
+import br.com.cafebinario.filesystem.api.dto.SearchDTO;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
 import br.com.cafebinario.logger.VerboseMode;
@@ -98,6 +101,36 @@ public class FilesService {
 						() -> get(pathPredicate.toAbsolutePath().toString()))));
 	}
 
+	@Log
+	public List<SearchDTO> index(final String path, final String keyword) {
+		
+		return streamOf(DEFAULT_DEPTH, path)
+				.map(pathPredicate->indexOf(get(pathPredicate.toAbsolutePath().toString()), keyword))
+				.filter(indexOf -> indexOf > -1)
+				.map(indexOf->SearchDTO
+						.builder()
+						.indexOf(indexOf)
+						.keyword(keyword.getBytes())
+						.path(path)
+						.build())
+				.collect(Collectors.toList());
+	}
+	
+	@Log
+	public List<SearchDTO> index(final String path, final byte[] keyword) {
+		
+		return streamOf(DEFAULT_DEPTH, path)
+				.map(pathPredicate->indexOf(get(pathPredicate.toAbsolutePath().toString()), keyword))
+				.filter(indexOf -> indexOf > -1)
+				.map(indexOf->SearchDTO
+						.builder()
+						.indexOf(indexOf)
+						.keyword(keyword)
+						.path(path)
+						.build())
+				.collect(Collectors.toList());
+	}
+	
 	@Log(verboseMode = VerboseMode.ON, logLevel = LogLevel.DEBUG)
 	private Path getPath(final String pathString) {
 
