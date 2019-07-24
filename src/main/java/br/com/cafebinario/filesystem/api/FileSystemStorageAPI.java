@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.cafebinario.filesystem.api.dto.EntryDTO;
+import br.com.cafebinario.filesystem.dto.EntryDTO;
 import br.com.cafebinario.filesystem.services.FilesService;
 
 @RestController

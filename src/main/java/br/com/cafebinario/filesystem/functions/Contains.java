@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import com.google.common.primitives.Bytes;
 
-import br.com.cafebinario.filesystem.api.dto.EntryDTO;
+import br.com.cafebinario.filesystem.dto.EntryDTO;
 
 public final class Contains {
 	

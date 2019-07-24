@@ -19,8 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import br.com.cafebinario.filesystem.HazelcastFileSystem;
-import br.com.cafebinario.filesystem.api.dto.EntryDTO;
-import br.com.cafebinario.filesystem.api.dto.SearchDTO;
+import br.com.cafebinario.filesystem.dto.EntryDTO;
+import br.com.cafebinario.filesystem.dto.SearchDTO;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
 import br.com.cafebinario.logger.VerboseMode;

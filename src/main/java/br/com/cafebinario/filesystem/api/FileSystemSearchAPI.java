@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.cafebinario.filesystem.api.dto.SearchDTO;
+import br.com.cafebinario.filesystem.dto.SearchDTO;
 import br.com.cafebinario.filesystem.services.FilesService;
 
 @RestController

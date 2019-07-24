@@ -1,4 +1,4 @@
-package br.com.cafebinario.filesystem.api.dto;
+package br.com.cafebinario.filesystem.dto;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
