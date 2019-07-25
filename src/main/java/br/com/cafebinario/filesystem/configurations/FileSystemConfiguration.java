@@ -59,7 +59,9 @@ public class FileSystemConfiguration {
     public ListenerFactory listenerFactory(@Value("${ftpServer.port:6921}") final Integer ftpPort) {
         
         final ListenerFactory listenerFactory = new ListenerFactory();
+        
         listenerFactory.setPort(ftpPort);
+        
         return listenerFactory;
     }
 
