@@ -16,6 +16,6 @@ public class FileSystemWatcherEventMessageListener implements MessageListener<No
     @Override
     public void onMessage(final Message<NotifyDTO> message) {
         final NotifyDTO notifyDTO = message.getMessageObject();
-        retry(HttpPutNotifySender::sendHttpRequest, notifyDTO, 3);
+        retry(content->HttpPutNotifySender.sendHttpRequest(content, notifyDTO.getUrl()), notifyDTO, 3);
     }
 }

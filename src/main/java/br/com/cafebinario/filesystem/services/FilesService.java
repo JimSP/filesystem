@@ -109,7 +109,7 @@ public class FilesService {
 
         return pathStreamConverter(
                 streamOf(DEFAULT_DEPTH, path).filter(pathPredicate -> containsData(keyword,
-                        () -> get(pathPredicate.toAbsolutePath().toString()))));
+                        () -> get(getAbsolutePath(pathPredicate)))));
     }
 
     @Log
@@ -117,39 +117,35 @@ public class FilesService {
 
         return pathStreamConverter(
                 streamOf(DEFAULT_DEPTH, path).filter(pathPredicate -> containsData(keyword,
-                        () -> get(pathPredicate.toAbsolutePath().toString()))));
+                        () -> get(getAbsolutePath(pathPredicate)))));
     }
 
     @Log
     public List<SearchDTO> index(final String path, final String keyword) {
-
+    	
         return streamOf(DEFAULT_DEPTH, path)
-                .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
-                        keyword))
-                .filter(indexOf -> indexOf > -1)
-                .map(indexOf -> SearchDTO
-                        .builder()
-                        .indexOf(indexOf)
-                        .keyword(keyword.getBytes())
-                        .path(path)
-                        .build())
-                .collect(Collectors.toList());
+        		.map(mapperPath->get(getAbsolutePath(mapperPath)))
+        		.map(entryDTO->SearchDTO
+        				.builder()
+        				.path(entryDTO.getPath())
+        				.keyword(keyword.getBytes())
+        				.indexes(indexOf(entryDTO, keyword))
+        				.build())
+        		.collect(Collectors.toList());
     }
 
     @Log
     public List<SearchDTO> index(final String path, final byte[] keyword) {
 
         return streamOf(DEFAULT_DEPTH, path)
-                .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
-                        keyword))
-                .filter(indexOf -> indexOf > -1)
-                .map(indexOf -> SearchDTO
-                        .builder()
-                        .indexOf(indexOf)
-                        .keyword(keyword)
-                        .path(path)
-                        .build())
-                .collect(Collectors.toList());
+        		.map(mapperPath->get(getAbsolutePath(mapperPath)))
+        		.map(entryDTO->SearchDTO
+        				.builder()
+        				.path(entryDTO.getPath())
+        				.keyword(keyword)
+        				.indexes(indexOf(entryDTO, keyword))
+        				.build())
+        		.collect(Collectors.toList());
     }
 
     @Log
@@ -221,28 +217,27 @@ public class FilesService {
     @Log
     public Integer update(final String path, final byte[] keyword, final byte[] data) {
 
-        final List<SearchDTO> serSearchDTOs = index(path, keyword);
-
-        return serSearchDTOs
+        return index(path, keyword)
                 .stream()
-                .map(searchDTO -> {
-
-                    final Integer position = searchDTO.getIndexOf();
-
-                    return edit(getPath(path),
+                .map(searchDTO -> searchDTO
+                		.getIndexes()
+                    	.stream()
+                    	.map(position ->edit(getPath(path),
                             EditableEntryDTO
                                 .builder()
                                 .position(position)
                                 .data(data)
-                                .build());
-        }).reduce((a,b)->a+b)
-            .orElse(0);
+                                .build()))
+                    	.reduce((a, b)-> a + b)
+                        .orElse(0))
+                .reduce((a, b)-> a + b)
+                .orElse(0);
     }
     
     @Log
-    public void update(final String path, final String keyword, final String data) {
+    public Integer update(final String path, final String keyword, final String data) {
 
-        update(path, keyword.getBytes(), data.getBytes());
+        return update(path, keyword.getBytes(), data.getBytes());
     }
 
     @Log
@@ -260,6 +255,10 @@ public class FilesService {
 
         return hazelcastFileSystem.resolveName(pathString);
     }
+    
+    private String getAbsolutePath(Path pathPredicate) {
+		return pathPredicate.toAbsolutePath().toString();
+	}
 
     private Stream<Path> streamOf(final Integer maxDepth, final String name) {
 
