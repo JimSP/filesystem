@@ -34,6 +34,7 @@ import br.com.cafebinario.filesystem.listener.FileSystemWatcherEventMessageListe
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
 import br.com.cafebinario.logger.VerboseMode;
+import lombok.SneakyThrows;
 
 @Service
 public class FilesService {
@@ -56,6 +57,7 @@ public class FilesService {
         try {
 
             final Path path = getPath(entryDTO.getPath());
+            create(path);
 
             return Files.write(path, entryDTO.getData()).toAbsolutePath().toString();
         } catch (IOException e) {
@@ -67,11 +69,7 @@ public class FilesService {
     public EntryDTO get(final String path) {
         try {
 
-            return EntryDTO
-                    .builder()
-                    .path(path)
-                    .data(Files.readAllBytes(getPath(path)))
-                    .build();
+            return EntryDTO.builder().path(path).data(Files.readAllBytes(getPath(path))).build();
         } catch (IOException e) {
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
@@ -91,7 +89,7 @@ public class FilesService {
     public List<String> list(final String path) {
 
         try (final Stream<Path> stream = Files.list(getPath(path))) {
-
+            
             return pathStreamConverter(stream);
         } catch (IOException e) {
             throw new IllegalArgumentException(INVALID_VALUE + path);
@@ -99,16 +97,17 @@ public class FilesService {
     }
 
     @Log
-    public List<String> find(final Integer maxDepth, final String name) {
+    public List<String> find(final Integer maxDepth, final String path, final String expression) {
 
-        return pathStreamConverter(streamOf(maxDepth, name));
+        return pathStreamConverter(streamOf(maxDepth, path, expression));
     }
 
     @Log
     public List<String> grep(final String path, final String keyword) {
 
         return pathStreamConverter(
-                streamOf(DEFAULT_DEPTH, path).filter(pathPredicate -> containsData(keyword,
+                streamOf(DEFAULT_DEPTH, path, path)
+                .filter(pathPredicate -> containsData(keyword,
                         () -> get(pathPredicate.toAbsolutePath().toString()))));
     }
 
@@ -116,39 +115,30 @@ public class FilesService {
     public List<String> grep(final String path, final byte[] keyword) {
 
         return pathStreamConverter(
-                streamOf(DEFAULT_DEPTH, path).filter(pathPredicate -> containsData(keyword,
+                streamOf(DEFAULT_DEPTH, path, path)
+                .filter(pathPredicate -> containsData(keyword,
                         () -> get(pathPredicate.toAbsolutePath().toString()))));
     }
 
     @Log
     public List<SearchDTO> index(final String path, final String keyword) {
 
-        return streamOf(DEFAULT_DEPTH, path)
+        return streamOf(DEFAULT_DEPTH, path, path)
                 .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
                         keyword))
-                .filter(indexOf -> indexOf > -1)
-                .map(indexOf -> SearchDTO
-                        .builder()
-                        .indexOf(indexOf)
-                        .keyword(keyword.getBytes())
-                        .path(path)
-                        .build())
+                .filter(indexOf -> indexOf > -1).map(indexOf -> SearchDTO.builder().indexOf(indexOf)
+                        .keyword(keyword.getBytes()).path(path).build())
                 .collect(Collectors.toList());
     }
 
     @Log
     public List<SearchDTO> index(final String path, final byte[] keyword) {
 
-        return streamOf(DEFAULT_DEPTH, path)
+        return streamOf(DEFAULT_DEPTH, path, path)
                 .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
                         keyword))
-                .filter(indexOf -> indexOf > -1)
-                .map(indexOf -> SearchDTO
-                        .builder()
-                        .indexOf(indexOf)
-                        .keyword(keyword)
-                        .path(path)
-                        .build())
+                .filter(indexOf -> indexOf > -1).map(indexOf -> SearchDTO.builder().indexOf(indexOf)
+                        .keyword(keyword).path(path).build())
                 .collect(Collectors.toList());
     }
 
@@ -157,11 +147,7 @@ public class FilesService {
 
         return edit(EditDTO.builder().path(path)
                 .editableEntrys(Arrays
-                        .asList(EditableEntryDTO
-                                .builder()
-                                .position(position)
-                                .data(data)
-                                .build()))
+                        .asList(EditableEntryDTO.builder().position(position).data(data).build()))
                 .build());
     }
 
@@ -171,18 +157,17 @@ public class FilesService {
         final Path path = getPath(editDTO.getPath());
 
         return editDTO.getEditableEntrys().stream()
-                .map(editableEntryDTO -> edit(path, editableEntryDTO))
-                .reduce((a, b) -> a + b)
+                .map(editableEntryDTO -> edit(path, editableEntryDTO)).reduce((a, b) -> a + b)
                 .orElse(0);
     }
 
     @Log
     public Integer edit(final Path path, final EditableEntryDTO editableEntryDTO) {
-        
+
         try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
                 StandardOpenOption.WRITE)) {
 
-            return edit(path, editableEntryDTO);
+            return edit(path, Arrays.asList(editableEntryDTO));
 
         } catch (IOException ex) {
 
@@ -196,8 +181,7 @@ public class FilesService {
         try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
                 StandardOpenOption.WRITE)) {
 
-            return editableEntryDTOs
-                    .stream()
+            return editableEntryDTOs.stream()
                     .map(editableEntryDTO -> edit(path, fc, editableEntryDTO))
                     .reduce((a, b) -> a + b).orElse(0);
 
@@ -205,40 +189,32 @@ public class FilesService {
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
-    
+
     @Log
     public Integer update(final UpdateDTO updateDTO) {
-        
+
         final String path = updateDTO.getPath();
-        
-        return updateDTO.getUpdatableEntrys()
-            .stream()
-            .map(updatableEntryDTO->update(path, updatableEntryDTO.getKeyword(), updatableEntryDTO.getData()))
-            .reduce((a,b) -> a + b)
-            .orElse(0);
+
+        return updateDTO
+                .getUpdatableEntrys().stream().map(updatableEntryDTO -> update(path,
+                        updatableEntryDTO.getKeyword(), updatableEntryDTO.getData()))
+                .reduce((a, b) -> a + b).orElse(0);
     }
-    
+
     @Log
     public Integer update(final String path, final byte[] keyword, final byte[] data) {
 
         final List<SearchDTO> serSearchDTOs = index(path, keyword);
 
-        return serSearchDTOs
-                .stream()
-                .map(searchDTO -> {
+        return serSearchDTOs.stream().map(searchDTO -> {
 
-                    final Integer position = searchDTO.getIndexOf();
+            final Integer position = searchDTO.getIndexOf();
 
-                    return edit(getPath(path),
-                            EditableEntryDTO
-                                .builder()
-                                .position(position)
-                                .data(data)
-                                .build());
-        }).reduce((a,b)->a+b)
-            .orElse(0);
+            return edit(getPath(path),
+                    EditableEntryDTO.builder().position(position).data(data).build());
+        }).reduce((a, b) -> a + b).orElse(0);
     }
-    
+
     @Log
     public void update(final String path, final String keyword, final String data) {
 
@@ -260,25 +236,29 @@ public class FilesService {
 
         return hazelcastFileSystem.resolveName(pathString);
     }
+    
+    @SneakyThrows
+    private void create(final Path path) {
+        if(Files.notExists(path)) {
+            Files.createFile(path);
+        }
+    }
 
-    private Stream<Path> streamOf(final Integer maxDepth, final String name) {
+    private Stream<Path> streamOf(final Integer maxDepth, final String path, final String expression) {
 
-        return hazelcastFileSystem.find(name, maxDepth, contains(name));
+        return hazelcastFileSystem.find(path, maxDepth, contains(expression));
     }
 
     private List<String> pathStreamConverter(final Stream<Path> stream) {
 
-        return stream
-                .map(Path::toAbsolutePath)
-                .map(Path::toString)
-                .collect(Collectors.toList());
+        return stream.map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toList());
     }
 
     private Integer edit(final Path path, final FileChannel fc,
             final EditableEntryDTO editableEntryDTO) {
 
         try {
-            
+
             fc.position(editableEntryDTO.getPosition());
             return fc.write(ByteBuffer.wrap(editableEntryDTO.getData()));
         } catch (IOException e) {
@@ -287,22 +267,17 @@ public class FilesService {
     }
 
     private void registerWatcher(final String path, final URL url) {
-        
+
         final ITopic<NotifyDTO> topic = hazelcastInstance.getReliableTopic(path);
-        
+
         topic.addMessageListener(fileSystemWatcherEventMessageListener);
 
-        hazelcastFileSystem.wacther(path, (event, monitoredPath) 
-                -> topic.publish(NotifyDTO
-                                    .builder()
-                                    .path(monitoredPath)
-                                    .kind(event.getKind().name())
-                                    .url(url)
-                                    .build()));
+        hazelcastFileSystem.wacther(path, (event, monitoredPath) -> topic.publish(NotifyDTO
+                .builder().path(monitoredPath).kind(event.getKind().name()).url(url).build()));
     }
 
     private void registerPath(final String path) {
-        
+
         final List<String> registredsPath = hazelcastInstance.getList("watcher-register");
 
         final int indexOf = registredsPath.indexOf(path);
