@@ -1,7 +1,5 @@
 package br.com.cafebinario.filesystem.dtos;
 
-import java.util.List;
-
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
