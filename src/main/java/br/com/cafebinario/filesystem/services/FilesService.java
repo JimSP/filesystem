@@ -1,6 +1,6 @@
 package br.com.cafebinario.filesystem.services;
 
-import static br.com.cafebinario.filesystem.functions.IndexOf.indexOf;
+import static br.com.cafebinario.filesystem.functions.IndexOf.firstIndexOf;
 import static br.com.cafebinario.filesystem.functions.Predicates.contains;
 
 import java.io.IOException;
@@ -148,12 +148,12 @@ public class FilesService {
     			.filter(Files::isRegularFile)
                 .map(mapperPath -> SearchDTO
     					.builder()
-    					.indexOf(indexOf(get(mapperPath), keyword))
+    					.indexOf(firstIndexOf(get(mapperPath), keyword))
     					.keywordString(keyword)
     					.keywordByteArray(keyword.getBytes())
     					.path(mapperPath.toAbsolutePath().toString())
     					.build())
-                .filter(searchDTO -> searchDTO.getIndexOf() > -1)
+                .filter(searchDTO->searchDTO.getIndexOf() > -1)
                 .collect(Collectors.toList());
     }
 
@@ -168,16 +168,17 @@ public class FilesService {
         			.filter(Files::isRegularFile)
                     .map(mapperPath -> SearchDTO
         					.builder()
-        					.indexOf(indexOf(get(mapperPath), keyword))
+        					.indexOf(firstIndexOf(get(mapperPath), keyword))
         					.keywordByteArray(keyword)
         					.keywordString(new String(keyword))
         					.path(mapperPath.toAbsolutePath().toString())
         					.build())
-                    .filter(searchDTO -> searchDTO.getIndexOf() > -1)
+                    .filter(searchDTO->searchDTO.getIndexOf() > -1)
                     .collect(Collectors.toList());
+
     	}else if(Files.isRegularFile(target)) {
     		
-    		final Integer indexOf = indexOf(get(target), keyword);
+    		final Integer indexOf = firstIndexOf(get(target), keyword);
     		
     		return Arrays.asList(SearchDTO
 					.builder()
@@ -234,6 +235,7 @@ public class FilesService {
 
             return editableEntryDTOs
             		.stream()
+            		.filter(editableEntryDTO->editableEntryDTO.getPosition() > -1)
                     .map(editableEntryDTO -> edit(path, fc, editableEntryDTO))
                     .reduce((a, b) -> a + b)
                     .orElse(0);
@@ -263,9 +265,8 @@ public class FilesService {
 
         return searchDTOs
         			.stream()
-        			.filter(searchDTO -> searchDTO.getIndexOf() > -1)
         			.map(searchDTO -> edit(getPath(searchDTO.getPath()),
-					                    EditableEntryDTO
+						                    EditableEntryDTO
 					                    	.builder()
 					                    	.position(searchDTO.getIndexOf())
 					                    	.data(updatableEntryDTO.getData())
@@ -275,9 +276,9 @@ public class FilesService {
     }
 
     @Log
-    public void update(final String path, final String keyword, final String data) {
+    public Integer update(final String path, final String keyword, final String data) {
 
-        update(path, UpdatableEntryDTO
+        return update(path, UpdatableEntryDTO
         		.builder()
         		.data(data.getBytes())
         		.keyword(keyword.getBytes())
@@ -309,7 +310,7 @@ public class FilesService {
     
     @SneakyThrows
     public Stream<Path> list(final Path path) {
-
+    	
         return Files.list(path);
     }
     

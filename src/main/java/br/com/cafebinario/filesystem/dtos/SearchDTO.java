@@ -1,5 +1,7 @@
 package br.com.cafebinario.filesystem.dtos;
 
+import java.util.List;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -22,7 +24,7 @@ public final class SearchDTO {
     @NotNull
     private final String keywordString;
     
-    private final Integer indexOf; 
+    private final Integer indexOf;
 
     @JsonCreator
 	public SearchDTO(

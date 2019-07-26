@@ -54,19 +54,14 @@ public class FileSystemConfiguration {
 
         return um;
     }
-    
-    @Bean
-    public CommandFactory commandFactory() {
-        
-        return commandName -> (session, context, request) -> log.debug("m=commandFactory, commandName={}", commandName);
-
-    }
 
     @Bean
     public ListenerFactory listenerFactory(@Value("${ftpServer.port:6921}") final Integer ftpPort) {
         
         final ListenerFactory listenerFactory = new ListenerFactory();
+        
         listenerFactory.setPort(ftpPort);
+        
         return listenerFactory;
     }
 
@@ -74,7 +69,6 @@ public class FileSystemConfiguration {
     public FtpServer ftpServer(
             @Autowired final UserManager userManager,
             @Autowired final ListenerFactory listenerFactory,
-            @Autowired final CommandFactory newCommandFactory,
             @Autowired final FileSystemFactory fileSystemFactory)
             throws FtpException {
 
