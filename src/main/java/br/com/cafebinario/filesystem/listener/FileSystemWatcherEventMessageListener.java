@@ -22,7 +22,7 @@ public class FileSystemWatcherEventMessageListener implements MessageListener<No
     	
         final NotifyDTO notifyDTO = message.getMessageObject();
         
-        final boolean accept =retry(content->HttpPutNotifySender.sendHttpRequest(content, notifyDTO.getUrl()), notifyDTO, 3);
+        final boolean accept = retry(content->HttpPutNotifySender.sendHttpRequest(content, notifyDTO.getUrl()), notifyDTO, 3);
         
         if(!accept) {
         	sendHttpRequestForceLogVerboseModeON(notifyDTO);
