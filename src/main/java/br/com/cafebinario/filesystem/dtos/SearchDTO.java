@@ -17,18 +17,23 @@ public final class SearchDTO {
     private final String path;
 
     @NotNull
-    private final byte[] keyword;
+    private final byte[] keywordByteArray;
+    
+    @NotNull
+    private final String keywordString;
     
     private final Integer indexOf; 
 
     @JsonCreator
 	public SearchDTO(
 			@JsonProperty("path") final String path,
-			@JsonProperty("keyword")  byte[] keyword,
+			@JsonProperty("keywordByteArray")  byte[] keywordByteArray,
+			@JsonProperty("keywordString")  String keywordString,
 			@JsonProperty("indexOf") final Integer indexOf) {
 
 		this.path = path;
-		this.keyword = keyword;
+		this.keywordByteArray = keywordByteArray;
+		this.keywordString = keywordString;
 		this.indexOf = indexOf;
 	}
 }

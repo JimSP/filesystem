@@ -48,7 +48,7 @@ public class FileSystemSearchAPI {
     @PostMapping(path = "/engine/grep", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public @ResponseBody List<String> grep(@RequestBody final SearchDTO searchDTO) {
 
-        return fileService.grep(searchDTO.getPath(), searchDTO.getKeyword());
+        return fileService.grep(searchDTO.getPath(), searchDTO.getKeywordByteArray());
     }
 
     @PostMapping(path = "/engine/grep/{path}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -68,7 +68,7 @@ public class FileSystemSearchAPI {
     @PostMapping(path = "/engine/index", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public @ResponseBody List<SearchDTO> indexOf(@RequestBody final SearchDTO searchDTO) {
 
-        return fileService.index(searchDTO.getPath(), searchDTO.getKeyword());
+        return fileService.index(searchDTO.getPath(), searchDTO.getKeywordByteArray());
     }
     
     @PostMapping(path = "/engine/index/{path}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)

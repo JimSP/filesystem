@@ -1,8 +1,7 @@
 package br.com.cafebinario.filesystem.services;
 
-import static br.com.cafebinario.filesystem.functions.Contains.contains;
-import static br.com.cafebinario.filesystem.functions.Contains.containsData;
 import static br.com.cafebinario.filesystem.functions.IndexOf.indexOf;
+import static br.com.cafebinario.filesystem.functions.Predicates.contains;
 
 import java.io.IOException;
 import java.net.URL;
@@ -29,7 +28,9 @@ import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.EntryDTO;
 import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 import br.com.cafebinario.filesystem.dtos.SearchDTO;
+import br.com.cafebinario.filesystem.dtos.UpdatableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.UpdateDTO;
+import br.com.cafebinario.filesystem.functions.Predicates;
 import br.com.cafebinario.filesystem.listener.FileSystemWatcherEventMessageListener;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
@@ -69,7 +70,25 @@ public class FilesService {
     public EntryDTO get(final String path) {
         try {
 
-            return EntryDTO.builder().path(path).data(Files.readAllBytes(getPath(path))).build();
+            return EntryDTO
+            		.builder()
+            		.path(path)
+            		.data(Files.readAllBytes(getPath(path)))
+            		.build();
+        } catch (IOException e) {
+            throw new IllegalArgumentException(INVALID_VALUE + path);
+        }
+    }
+    
+    @Log
+    public EntryDTO get(final Path path) {
+        try {
+
+            return EntryDTO
+            		.builder()
+            		.path(path.toAbsolutePath().toString())
+            		.data(Files.readAllBytes(path))
+            		.build();
         } catch (IOException e) {
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
@@ -105,50 +124,87 @@ public class FilesService {
     @Log
     public List<String> grep(final String path, final String keyword) {
 
-        return pathStreamConverter(
-                streamOf(DEFAULT_DEPTH, path, path)
-                .filter(pathPredicate -> containsData(keyword,
-                        () -> get(pathPredicate.toAbsolutePath().toString()))));
+    	return list(getPath(path))
+    			.filter(Files::isRegularFile)
+    			.filter(predicatePath -> Predicates.contains(get(predicatePath), keyword))
+    			.map(mapperPath -> mapperPath.toAbsolutePath().toString())
+    			.collect(Collectors.toList());
     }
 
     @Log
     public List<String> grep(final String path, final byte[] keyword) {
 
-        return pathStreamConverter(
-                streamOf(DEFAULT_DEPTH, path, path)
-                .filter(pathPredicate -> containsData(keyword,
-                        () -> get(pathPredicate.toAbsolutePath().toString()))));
+    	return list(getPath(path))
+    			.filter(Files::isRegularFile)
+    			.filter(predicatePath -> Predicates.contains(get(predicatePath), keyword))
+    			.map(mapperPath -> mapperPath.toAbsolutePath().toString())
+    			.collect(Collectors.toList());
     }
 
     @Log
     public List<SearchDTO> index(final String path, final String keyword) {
 
-        return streamOf(DEFAULT_DEPTH, path, path)
-                .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
-                        keyword))
-                .filter(indexOf -> indexOf > -1).map(indexOf -> SearchDTO.builder().indexOf(indexOf)
-                        .keyword(keyword.getBytes()).path(path).build())
+        return list(getPath(path))
+    			.filter(Files::isRegularFile)
+                .map(mapperPath -> SearchDTO
+    					.builder()
+    					.indexOf(indexOf(get(mapperPath), keyword))
+    					.keywordString(keyword)
+    					.keywordByteArray(keyword.getBytes())
+    					.path(mapperPath.toAbsolutePath().toString())
+    					.build())
+                .filter(searchDTO -> searchDTO.getIndexOf() > -1)
                 .collect(Collectors.toList());
     }
 
     @Log
     public List<SearchDTO> index(final String path, final byte[] keyword) {
 
-        return streamOf(DEFAULT_DEPTH, path, path)
-                .map(pathPredicate -> indexOf(get(pathPredicate.toAbsolutePath().toString()),
-                        keyword))
-                .filter(indexOf -> indexOf > -1).map(indexOf -> SearchDTO.builder().indexOf(indexOf)
-                        .keyword(keyword).path(path).build())
-                .collect(Collectors.toList());
+    	final Path target = getPath(path);
+    	
+    	if(Files.isDirectory(target)) {
+    		
+    		return list(getPath(path))
+        			.filter(Files::isRegularFile)
+                    .map(mapperPath -> SearchDTO
+        					.builder()
+        					.indexOf(indexOf(get(mapperPath), keyword))
+        					.keywordByteArray(keyword)
+        					.keywordString(new String(keyword))
+        					.path(mapperPath.toAbsolutePath().toString())
+        					.build())
+                    .filter(searchDTO -> searchDTO.getIndexOf() > -1)
+                    .collect(Collectors.toList());
+    	}else if(Files.isRegularFile(target)) {
+    		
+    		final Integer indexOf = indexOf(get(target), keyword);
+    		
+    		return Arrays.asList(SearchDTO
+					.builder()
+					.indexOf(indexOf)
+					.keywordByteArray(keyword)
+					.keywordString(new String(keyword))
+					.path(target.toAbsolutePath().toString())
+					.build());
+    	}
+    	
+    	throw new IllegalArgumentException(INVALID_VALUE + path);
     }
 
     @Log
     public Integer edit(final String path, final Integer position, final byte[] data) {
 
-        return edit(EditDTO.builder().path(path)
-                .editableEntrys(Arrays
-                        .asList(EditableEntryDTO.builder().position(position).data(data).build()))
-                .build());
+        return edit(EditDTO
+	        		.builder()
+	        		.path(path)
+	                .editableEntrys(
+	                		Arrays.asList(
+	                				EditableEntryDTO
+	                        			.builder()
+	                        			.position(position)
+	                        			.data(data)
+	                        			.build()))
+	                .build());
     }
 
     @Log
@@ -156,23 +212,18 @@ public class FilesService {
 
         final Path path = getPath(editDTO.getPath());
 
-        return editDTO.getEditableEntrys().stream()
-                .map(editableEntryDTO -> edit(path, editableEntryDTO)).reduce((a, b) -> a + b)
+        return editDTO
+        		.getEditableEntrys()
+        		.stream()
+                .map(editableEntryDTO -> edit(path, editableEntryDTO))
+                .reduce((a, b) -> a + b)
                 .orElse(0);
     }
 
     @Log
     public Integer edit(final Path path, final EditableEntryDTO editableEntryDTO) {
 
-        try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
-                StandardOpenOption.WRITE)) {
-
-            return edit(path, Arrays.asList(editableEntryDTO));
-
-        } catch (IOException ex) {
-
-            throw new IllegalArgumentException(INVALID_VALUE + path);
-        }
+    	 return edit(path, Arrays.asList(editableEntryDTO));
     }
 
     @Log
@@ -181,9 +232,11 @@ public class FilesService {
         try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
                 StandardOpenOption.WRITE)) {
 
-            return editableEntryDTOs.stream()
+            return editableEntryDTOs
+            		.stream()
                     .map(editableEntryDTO -> edit(path, fc, editableEntryDTO))
-                    .reduce((a, b) -> a + b).orElse(0);
+                    .reduce((a, b) -> a + b)
+                    .orElse(0);
 
         } catch (IOException ex) {
             throw new IllegalArgumentException(INVALID_VALUE + path);
@@ -196,29 +249,39 @@ public class FilesService {
         final String path = updateDTO.getPath();
 
         return updateDTO
-                .getUpdatableEntrys().stream().map(updatableEntryDTO -> update(path,
-                        updatableEntryDTO.getKeyword(), updatableEntryDTO.getData()))
-                .reduce((a, b) -> a + b).orElse(0);
+                .getUpdatableEntrys()
+                .stream()
+                .map(updatableEntryDTO -> update(path, updatableEntryDTO))
+                .reduce((a, b) -> a + b)
+                .orElse(0);
     }
 
     @Log
-    public Integer update(final String path, final byte[] keyword, final byte[] data) {
+    public Integer update(final String path, final UpdatableEntryDTO updatableEntryDTO) {
 
-        final List<SearchDTO> serSearchDTOs = index(path, keyword);
+        final List<SearchDTO> searchDTOs = index(path, updatableEntryDTO.getKeyword());
 
-        return serSearchDTOs.stream().map(searchDTO -> {
-
-            final Integer position = searchDTO.getIndexOf();
-
-            return edit(getPath(path),
-                    EditableEntryDTO.builder().position(position).data(data).build());
-        }).reduce((a, b) -> a + b).orElse(0);
+        return searchDTOs
+        			.stream()
+        			.filter(searchDTO -> searchDTO.getIndexOf() > -1)
+        			.map(searchDTO -> edit(getPath(searchDTO.getPath()),
+					                    EditableEntryDTO
+					                    	.builder()
+					                    	.position(searchDTO.getIndexOf())
+					                    	.data(updatableEntryDTO.getData())
+					                    	.build()))
+        			.reduce((a, b) -> a + b)
+        		.orElse(0);
     }
 
     @Log
     public void update(final String path, final String keyword, final String data) {
 
-        update(path, keyword.getBytes(), data.getBytes());
+        update(path, UpdatableEntryDTO
+        		.builder()
+        		.data(data.getBytes())
+        		.keyword(keyword.getBytes())
+        		.build());
     }
 
     @Log
@@ -243,7 +306,13 @@ public class FilesService {
             Files.createFile(path);
         }
     }
+    
+    @SneakyThrows
+    public Stream<Path> list(final Path path) {
 
+        return Files.list(path);
+    }
+    
     private Stream<Path> streamOf(final Integer maxDepth, final String path, final String expression) {
 
         return hazelcastFileSystem.find(path, maxDepth, contains(expression));
