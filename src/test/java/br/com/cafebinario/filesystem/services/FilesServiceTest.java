@@ -223,27 +223,4 @@ public class FilesServiceTest {
                                     .build())
                         .intValue());
     }
-
-    @Test
-    public void watcher() throws MalformedURLException, InterruptedException {
-
-        filesService.watcher("/", new URL("http://localhost:8000/"));
-        
-        filesService.save(
-                EntryDTO
-                    .builder()
-                    .data("teste".getBytes())
-                    .path("/teste-filewacther.txt")
-                    .build());
-        
-        TimeUnit.MILLISECONDS.sleep(500);
-        
-        Mockito
-    		.verify(fileWactherWebHookAPI)
-    		.notify(NotifyDTO
-    				.builder()
-    				.kind("ENTRY_CREATE")
-    				.path("/teste-filewacther.txt")
-    				.build());
-    }
 }
