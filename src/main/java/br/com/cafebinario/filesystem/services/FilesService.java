@@ -342,8 +342,14 @@ public class FilesService {
 
         topic.addMessageListener(fileSystemWatcherEventMessageListener);
 
-        hazelcastFileSystem.wacther(path, (event, monitoredPath) -> topic.publish(NotifyDTO
-                .builder().path(monitoredPath).kind(event.getKind().name()).url(url).build()));
+        hazelcastFileSystem
+	        .wacther(path, (event, monitoredPath) -> topic.publish(
+										        		NotifyDTO
+										                	.builder()
+										                	.path(event.getPath())
+										                	.kind(event.getEvent())
+										                	.url(url)
+										                	.build()));
     }
 
     private void registerPath(final String path) {

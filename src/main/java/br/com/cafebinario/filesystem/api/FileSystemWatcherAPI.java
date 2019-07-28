@@ -20,19 +20,28 @@ import lombok.SneakyThrows;
 @RestController
 public class FileSystemWatcherAPI {
 
-    @Autowired
-    private FilesService fileService;
+	@Autowired
+	private FilesService fileService;
 
-    @PutMapping(path = "/watcher/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @ResponseStatus(code = HttpStatus.ACCEPTED)
-    public void register(@PathVariable("path") final List<String> path, @RequestBody final String url) {
+	@PutMapping(path = "/watcher/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@ResponseStatus(code = HttpStatus.ACCEPTED)
+	public void register(
+			@PathVariable(name = "path", required = false) final List<String> path,
+			@RequestBody final String host) {
 
-        fileService.watcher(reduce(path), toUrl(url));
-    }
-    
-    @SneakyThrows
-    private URL toUrl(final String url) {
+		final String[] hostNameAndPortNumber = host.split("[:]");
+		final String hostName = hostNameAndPortNumber[0];
+		final Integer portNumber = hostNameAndPortNumber.length > 1 ? Integer.valueOf(hostNameAndPortNumber[1]) : 0;
+		fileService.watcher(reduce(path), toUrl(hostName, portNumber));
+	}
 
-        return new URL(url);
-    }
+	@SneakyThrows
+	private URL toUrl(final String host, final Integer port) {
+
+		if(port == 0) {
+			return new URL("http", host, "/notify");
+		}
+		
+		return new URL("http", host, port, "/notify");
+	}
 }

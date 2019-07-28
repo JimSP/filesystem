@@ -2,251 +2,155 @@
 package br.com.cafebinario.filesystem.watchers;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
-import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public final class FileWatcher implements Closeable {
 
-    private static final int QTY_THREADS = 10;
+	private static final int QTY_THREADS = 5;
 
-    public static FileWatcher of() {
-        return new FileWatcher();
-    }
+	public static FileWatcher of(final FileSystem fileSystem) {
+		return new FileWatcher(fileSystem);
+	}
 
-    public static FileWatcher of(final ExecutorService executorService) {
-        return new FileWatcher(executorService);
-    }
+	public static FileWatcher of(final FileSystem fileSystem, final Integer qtyThreads) {
+		return new FileWatcher(fileSystem, qtyThreads);
+	}
 
-    private AtomicBoolean started = new AtomicBoolean(Boolean.TRUE);
+	public static FileWatcher of(final FileSystem fileSystem, final ExecutorService executorService) {
+		return new FileWatcher(fileSystem, executorService);
+	}
 
-    private final Map<WatchKey, Path> keys = Collections.synchronizedMap(new HashMap<>());
-    private final ExecutorService executorService;
+	private AtomicBoolean started = new AtomicBoolean(Boolean.TRUE);
 
-    private final Map<WatchKeyOriginAndEvent, List<BiConsumer<WatcherEvent, String>>> fileConsumerMapRegister = Collections
-            .synchronizedMap(new HashMap<>());
+	private final ExecutorService executorService;
 
-    private final Map<WatchKeyOriginAndEvent, WatchServiceWalkAndRegisterWrapper> watchServiceMap = Collections
-            .synchronizedMap(new HashMap<>());
+	private final WatchService watchService;
 
-    private FileWatcher(final ExecutorService executorService) {
-        this.executorService = executorService;
-    }
+	private final Map<Path, KeyConsumerEntry> pathConsumerMap = Collections.synchronizedMap(new HashMap<>());
 
-    private FileWatcher() {
-        this.executorService = Executors.newFixedThreadPool(QTY_THREADS);
-    }
+	@SneakyThrows
+	private FileWatcher(final FileSystem fileSystem, final ExecutorService executorService) {
+		this.executorService = executorService;
+		this.watchService = fileSystem.newWatchService();
+	}
 
-    public void registerConsumerCreateEvent(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer) {
-        this.registerConsumerWithoutWalkAndRegisterDirectories(origin, fileConsumer,
-                StandardWatchEventKinds.ENTRY_CREATE);
-    }
+	private FileWatcher(final FileSystem fileSystem) {
+		this(fileSystem, Executors.newFixedThreadPool(QTY_THREADS));
+	}
 
-    public void registerConsumerModifyEvent(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer) {
-        this.registerConsumerWithoutWalkAndRegisterDirectories(origin, fileConsumer,
-                StandardWatchEventKinds.ENTRY_MODIFY);
-    }
+	private FileWatcher(final FileSystem fileSystem, final Integer qtyThreads) {
+		this(fileSystem, Executors.newFixedThreadPool(qtyThreads));
+	}
 
-    public void registerConsumerDeleteEvent(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer) {
-        this.registerConsumerWithoutWalkAndRegisterDirectories(origin, fileConsumer,
-                StandardWatchEventKinds.ENTRY_DELETE);
-    }
+	public void start() {
 
-    public void registerConsumerOverflowEvent(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer) {
-        this.registerConsumerWithoutWalkAndRegisterDirectories(origin, fileConsumer,
-                StandardWatchEventKinds.OVERFLOW);
-    }
+		log.info("m:start");
 
-    public void registerConsumerAllEvents(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer) {
-        this.registerConsumerWithoutWalkAndRegisterDirectories(origin, fileConsumer,
-                StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY);
-    }
+		started.set(Boolean.TRUE);
 
-    public void registerConsumerWithWalkAndRegisterDirectories(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer, final Kind<?>... events) {
-        this.registerConsumer(origin, fileConsumer, Boolean.TRUE, events);
-    }
+		executorService.submit(() -> {
 
-    public void registerConsumerWithoutWalkAndRegisterDirectories(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer, final Kind<?>... events) {
-        this.registerConsumer(origin, fileConsumer, Boolean.FALSE, events);
-    }
+			while (isRunning()) {
 
-    @SneakyThrows
-    public void registerConsumer(final Path origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer,
-            final Boolean walkAndRegisterDirectories, final Kind<?>... events) {
-        if (Files.notExists(origin)) {
-            Files.createDirectories(origin);
-        }
+				pooling();
+			}
+		});
+	}
 
-        if (!Files.isDirectory(origin)) {
-            throw new IllegalArgumentException(
-                    origin.toAbsolutePath().toString() + " is not a directory.");
-        }
+	@SneakyThrows
+	public void register(final Path path, final BiConsumer<WatcherEvent, String> fileConsumer) {
 
-        Arrays.asList(events) //
-                .stream() //
-                .forEach(event -> sendNotify(origin, fileConsumer, walkAndRegisterDirectories,
-                        event));
-    }
+		log.info("m:register, path={}", path);
 
-    @SneakyThrows
-    private void sendNotify(final Path origin, final BiConsumer<WatcherEvent, String> fileConsumer,
-            final Boolean walkAndRegisterDirectories, final Kind<?> event) {
+		final WatchKey watchKey = path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
+				StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY,
+				StandardWatchEventKinds.OVERFLOW);
 
-        final WatchService watchService = origin.getFileSystem().newWatchService();
-        final WatchKeyOriginAndEvent watchKeyOriginAndEvent = new WatchKeyOriginAndEvent(
-                origin.toAbsolutePath().toString(), event);
+		pathConsumerMap.put(path, KeyConsumerEntry
+				.builder()
+				.watchKey(watchKey)
+				.consumer(fileConsumer)
+				.build());
+	}
 
-        watchServiceMap.put(watchKeyOriginAndEvent,
-                new WatchServiceWalkAndRegisterWrapper(watchService, walkAndRegisterDirectories));
+	public void unregiter(final Path path) {
 
-        walkAndRegisterDirectories(watchService, origin, event);
+		log.info("m:unregiter, path={}", path);
 
-        if (fileConsumerMapRegister.containsKey(watchKeyOriginAndEvent)) {
-            fileConsumerMapRegister.get(watchKeyOriginAndEvent).add(fileConsumer);
-        } else {
-            final List<BiConsumer<WatcherEvent, String>> list = new ArrayList<>();
-            list.add(fileConsumer);
-            fileConsumerMapRegister.put(watchKeyOriginAndEvent, list);
-        }
-    }
+		pathConsumerMap.remove(path);
+	}
 
-    public boolean unregister(final File origin,
-            final BiConsumer<WatcherEvent, String> fileConsumer, final Kind<?> event) {
+	@SneakyThrows
+	private void pooling() {
 
-        final List<BiConsumer<WatcherEvent, String>> consumerList = fileConsumerMapRegister
-                .get(new WatchKeyOriginAndEvent(origin.getAbsolutePath(), event));
-        if (consumerList != null) {
-            return consumerList.remove(fileConsumer);
-        }
+		log.info("m:pooling");
 
-        return false;
-    }
+		watchService.take().pollEvents().stream()
+				.forEach(action -> executorService.submit(() -> dispacherEvent(action)));
+	}
 
-    public void start() {
-        started.set(Boolean.TRUE);
-        executorService.submit(() -> {
-            while (started.get()) {
-                processEvent();
-            }
-        });
-    }
+	private void dispacherEvent(final WatchEvent<?> wathEvent) {
 
-    private void processEvent() {
-        watchServiceMap //
-                .entrySet() //
-                .stream() //
-                .forEach(entry -> executorService.execute(() -> {
-                    final WatchServiceWalkAndRegisterWrapper wrapper = entry.getValue();
-                    pooling(wrapper);
-                }));
-    }
+		log.info("m:dispacherEvent, wathEvent:{}", wathEvent);
 
-    @SneakyThrows
-    private void pooling(final WatchServiceWalkAndRegisterWrapper wrapper) {
-        final WatchKey key = wrapper.getWatchService().take();
-        final Path dir = createPath(key);
-        poolingEvents(wrapper.getWatchService(), key, dir, wrapper.getWalkAndRegisterDirectories());
-        checkValid(key);
-    }
+		try {
 
-    @SneakyThrows
-    private Path createPath(final WatchKey key) {
-        return keys.get(key);
-    }
+			pathConsumerMap.entrySet().stream().forEach(keyConsumerEntry -> {
+				log.info("m:dispacherEvent, step:accept, wathEvent:{}", wathEvent);
 
-    private void checkValid(final WatchKey key) {
-        final boolean valid = key.reset();
-        if (!valid) {
-            keys.remove(key);
-        }
-    }
+				final BiConsumer<WatcherEvent, String> consumer = keyConsumerEntry
+						.getValue()
+						.getConsumer();
 
-    @SuppressWarnings("unchecked")
-    private void poolingEvents(final WatchService watchService, final WatchKey key, final Path dir,
-            final Boolean walkAndRegisterDirectories) {
-        key.pollEvents() //
-                .forEach(event -> {
-                    final Kind<?> kind = event.kind();
-                    final Path name = ((WatchEvent<Path>) event).context();
-                    final Path child = Paths
-                            .get(dir.toString() + File.separatorChar + name.toString());
+				consumer.accept(WatcherEvent
+						.builder()
+						.event(wathEvent
+								.kind()
+								.name())
+						.path(wathEvent
+								.context()
+								.toString())
+						.build(), keyConsumerEntry
+						.getKey()
+						.toString());
+			});
 
-                    dispacherEvent(dir.toFile().getAbsolutePath(), kind, child);
+		} catch (Exception e) {
+			log.error("m:dispacherEvent", e);
+		}
+	}
 
-                    if (kind == StandardWatchEventKinds.ENTRY_CREATE && walkAndRegisterDirectories
-                            && Files.isDirectory(child)) {
-                        walkAndRegisterDirectories(watchService, child);
-                    }
-                });
-    }
+	public Boolean isRunning() {
 
-    private void dispacherEvent(final String origin, final Kind<?> kind, final Path child) {
-        final WatcherEvent watcherEvent = new WatcherEvent(origin, kind, child);
-        final WatchKeyOriginAndEvent watchKeyOriginAndEvent = new WatchKeyOriginAndEvent(origin,
-                kind);
+		return started.get();
+	}
 
-        fileConsumerMapRegister //
-                .get(watchKeyOriginAndEvent) //
-                .parallelStream() //
-                .forEach(action -> {
-                    final String uuid = UUID.randomUUID().toString();
-                    action.accept(watcherEvent, uuid);
-                });
-    }
+	@Override
+	public void close() throws IOException {
 
-    private void registerDirectory(final WatchService watchService, final Path dir,
-            final Kind<?>... events) throws IOException {
-        final WatchKey key = dir.register(watchService, events);
-        keys.put(key, dir);
-    }
+		log.info("m:close");
 
-    @SneakyThrows(value = { IOException.class })
-    private void walkAndRegisterDirectories(final WatchService watchService, final Path path,
-            final Kind<?>... events) {
-        Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(final Path dir,
-                    final BasicFileAttributes attrs) throws IOException {
-                registerDirectory(watchService, dir, events);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
+		started.set(Boolean.FALSE);
 
-    @Override
-    public void close() throws IOException {
-        started.set(Boolean.FALSE);
-    }
+		watchService.close();
+
+		executorService.shutdownNow();
+	}
 }

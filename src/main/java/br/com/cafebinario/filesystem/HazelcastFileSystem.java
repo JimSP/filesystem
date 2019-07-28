@@ -22,6 +22,9 @@ public class HazelcastFileSystem {
 
     @Autowired
     private FileSystem fileSystem;
+    
+    @Autowired
+    private FileWatcher fileWatcher;
 
     public Path resolveName(final String filePath) {
         if (filePath.startsWith(PREFIX)) {
@@ -48,11 +51,6 @@ public class HazelcastFileSystem {
     
     @SneakyThrows
     public void wacther(final String filePath, final BiConsumer<WatcherEvent, String> fileConsumer) {
-    	
-    	final FileWatcher fileWatcher = FileWatcher.of();
-		
-    	fileWatcher.registerConsumerAllEvents(resolveName(filePath), fileConsumer);
-		
-		fileWatcher.start();
+    	fileWatcher.register(resolveName(filePath), fileConsumer);
     }
 }

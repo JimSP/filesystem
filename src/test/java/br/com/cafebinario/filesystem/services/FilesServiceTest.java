@@ -13,12 +13,12 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.core.IsCollectionContaining;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -28,10 +28,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import br.com.cafebinario.filesystem.HazelcastFileSystem;
+import br.com.cafebinario.filesystem.api.FileWactherWebHookAPI;
 import br.com.cafebinario.filesystem.configurations.FileSystemConfiguration;
 import br.com.cafebinario.filesystem.dtos.EditDTO;
 import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.EntryDTO;
+import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 import br.com.cafebinario.filesystem.dtos.SearchDTO;
 import br.com.cafebinario.filesystem.dtos.UpdatableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.UpdateDTO;
@@ -42,7 +44,7 @@ import br.com.cafebinario.logger.Log;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = { FilesService.class, HazelcastFileSystem.class,
-        FileSystemConfiguration.class, PathToFtpFileMapper.class })
+        FileSystemConfiguration.class, PathToFtpFileMapper.class, FileSystemWatcherEventMessageListener.class })
 @EnableLog
 public class FilesServiceTest {
 
@@ -50,7 +52,7 @@ public class FilesServiceTest {
     private FilesService filesService;
 
     @MockBean
-    private FileSystemWatcherEventMessageListener fileSystemWatcherEventMessageListener;
+    private FileWactherWebHookAPI fileWactherWebHookAPI;
 
     private final String helloworld = "Hello World!";
 
@@ -223,25 +225,25 @@ public class FilesServiceTest {
     }
 
     @Test
-    @Ignore
-    /***
-     * TODO:
-     * precisa verificar por que está em espera
-     * 
-     */
-    public void watcher() throws MalformedURLException {
+    public void watcher() throws MalformedURLException, InterruptedException {
 
         filesService.watcher("/", new URL("http://localhost:8000/"));
-
+        
         filesService.save(
                 EntryDTO
                     .builder()
                     .data("teste".getBytes())
-                    .path("teste-filewacther")
+                    .path("/teste-filewacther.txt")
                     .build());
-
+        
+        TimeUnit.MILLISECONDS.sleep(500);
+        
         Mockito
-            .verify(fileSystemWatcherEventMessageListener)
-            .onMessage(Mockito.any());
+    		.verify(fileWactherWebHookAPI)
+    		.notify(NotifyDTO
+    				.builder()
+    				.kind("ENTRY_CREATE")
+    				.path("/teste-filewacther.txt")
+    				.build());
     }
 }

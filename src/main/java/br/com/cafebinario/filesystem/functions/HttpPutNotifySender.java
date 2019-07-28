@@ -60,10 +60,12 @@ public final class HttpPutNotifySender {
 
         final HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
         
-        urlConnection.connect();
+        
         urlConnection.setRequestMethod(METHOD);
         urlConnection.setRequestProperty(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8);
-        
+        urlConnection.setDoOutput(true);
+        urlConnection.connect();
+
         return urlConnection;
     }
 

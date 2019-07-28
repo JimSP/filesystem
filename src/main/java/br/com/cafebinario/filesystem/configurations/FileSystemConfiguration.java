@@ -27,6 +27,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
 import br.com.cafebinario.filesystem.mappers.PathToFtpFileMapper;
+import br.com.cafebinario.filesystem.watchers.FileWatcher;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
@@ -158,5 +159,10 @@ public class FileSystemConfiguration {
 
         return Jimfs.newFileSystem(HAZEL_FS, com.google.common.jimfs.Configuration.unix(),
                 hazelcastInstance.getMap(HAZEL_ROOTS));
+    }
+    
+    @Bean(initMethod="start", destroyMethod="close")
+    public FileWatcher fileWatcher(@Autowired final FileSystem fileSystem) {
+    	return FileWatcher.of(fileSystem);
     }
 }

@@ -1,22 +1,13 @@
-
 package br.com.cafebinario.filesystem.watchers;
-
-import java.nio.file.Path;
-import java.nio.file.WatchEvent.Kind;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class WatcherEvent implements Comparable<WatcherEvent>{
+public final class WatcherEvent {
+	
+	private final String path;
+	private final String event;
 
-	private final String origin;
-	private final Kind<?> kind;
-	private final Path path;
-
-	@Override
-	public int compareTo(final WatcherEvent watcherEvent) {
-		return this.path.compareTo(watcherEvent.path) + (this.kind.hashCode() - watcherEvent.kind.hashCode()); 
-	}
 }
