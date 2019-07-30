@@ -1,15 +1,13 @@
 package br.com.cafebinario.filesystem.functions;
 
-import java.util.List;
-
 public final class Reduce {
 
-    public static String reduce(final List<String> path) {
-        return path
-                .stream()
-                .reduce((a, b) -> a.concat("/")
-                        .concat(b))
-                .orElse("");
+	public static String reduce(final String fullPath) {
+        return fullPath;
+    }
+	
+    public static String reduce(final String fullPath, final String basePath) {
+        return fullPath.substring(basePath.length());
     }
 
     private Reduce() {

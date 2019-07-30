@@ -4,10 +4,11 @@ import static br.com.cafebinario.filesystem.functions.Reduce.reduce;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -34,15 +35,17 @@ public class FileSystemEditDocumentAPI {
 		return filesService.edit(editDTO);
 	}
 	
-	@PutMapping(path = "/edit/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@PutMapping(path = "/edit/**", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseStatus(code = HttpStatus.ACCEPTED)
 	public @ResponseBody Integer edit(
-			@PathVariable(name = "path", required = true) final List<String> path,
+			final HttpServletRequest httpServletRequest,
 			@RequestBody final List<EditableEntryDTO> editableEntryDTOs) {
 
+		final String fullPath = httpServletRequest.getRequestURI();
+		
 		return filesService.edit(EditDTO
 				.builder()
-				.path(reduce(path))
+				.path(reduce(fullPath, "/edit"))
 				.editableEntrys(editableEntryDTOs)
 				.build());
 	}
@@ -55,15 +58,17 @@ public class FileSystemEditDocumentAPI {
         return filesService.update(updateDTO);
     }
     
-    @PutMapping(path = "/update/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PutMapping(path = "/update/**", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseStatus(code = HttpStatus.ACCEPTED)
     public @ResponseBody Integer update(
-    		@PathVariable(name = "path", required = true) final List<String> path,
+    		final HttpServletRequest httpServletRequest,
             @RequestBody final List<UpdatableEntryDTO> updatableEntryDTOs) {
 
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
         return filesService.update(UpdateDTO
                 .builder()
-                .path(reduce(path))
+                .path(reduce(fullPath, "/update"))
                 .updatableEntrys(updatableEntryDTOs)
                 .build());
     }

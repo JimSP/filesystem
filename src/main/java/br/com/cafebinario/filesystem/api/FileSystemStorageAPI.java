@@ -2,8 +2,9 @@ package br.com.cafebinario.filesystem.api;
 
 import static br.com.cafebinario.filesystem.functions.Reduce.reduce;
 
-import java.util.List;
 import java.util.Optional;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,32 +35,40 @@ public class FileSystemStorageAPI {
         return save(entryDTO);
     }
 
-    @PostMapping(path = "/{path}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(path = "/**", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseStatus(code = HttpStatus.CREATED)
-    public @ResponseBody String createFile(@PathVariable("path") final List<String> path,
+    public @ResponseBody String createFile(final HttpServletRequest httpServletRequest,
             @RequestBody final byte[] data) {
 
-        return save(reduce(path), data);
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
+        return save(reduce(fullPath), data);
     }
 
-    @GetMapping(path = "/{path}", produces = { MediaType.APPLICATION_JSON_UTF8_VALUE })
-    public @ResponseBody EntryDTO getFile(@PathVariable("path") final List<String> path) {
+    @GetMapping(path = "/**", produces = { MediaType.APPLICATION_JSON_UTF8_VALUE })
+    public @ResponseBody EntryDTO getFile(final HttpServletRequest httpServletRequest) {
 
-        return getEntryDTO(reduce(path));
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
+        return getEntryDTO(reduce(fullPath));
     }
 
-    @GetMapping(path = "/{path}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public @ResponseBody byte[] getFileRawData(@PathVariable("path") final List<String> path) {
+    @GetMapping(path = "/**", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public @ResponseBody byte[] getFileRawData(final HttpServletRequest httpServletRequest) {
 
-        return getData(reduce(path));
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
+        return getData(reduce(fullPath));
     }
 
-    @PutMapping(path = "/{path}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PutMapping(path = "/**", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseStatus(code = HttpStatus.ACCEPTED)
-    public @ResponseBody String acceptFile(@PathVariable("path") final List<String> path,
+    public @ResponseBody String acceptFile(final HttpServletRequest httpServletRequest,
             @RequestBody final byte[] data) {
 
-        return save(reduce(path), data);
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
+        return save(reduce(fullPath), data);
     }
 
     @PutMapping(path = "/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -70,12 +78,14 @@ public class FileSystemStorageAPI {
         return save(entryDTO);
     }
 
-    @PatchMapping(path = "/{path}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PatchMapping(path = "/**", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseStatus(code = HttpStatus.ACCEPTED)
-    public @ResponseBody EntryDTO patchFile(@PathVariable("path") final List<String> path,
+    public @ResponseBody EntryDTO patchFile(final HttpServletRequest httpServletRequest,
             @RequestBody final byte[] data) {
 
-        return patch(reduce(path), data);
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
+        return patch(reduce(fullPath), data);
     }
 
     @PatchMapping(path = "/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -90,11 +100,13 @@ public class FileSystemStorageAPI {
         return data;
     }
 
-    @DeleteMapping(path = "/{path}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @DeleteMapping(path = "/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseStatus(code = HttpStatus.ACCEPTED)
-    public @ResponseBody String deleteFile(@PathVariable("path") final List<String> path) {
+    public @ResponseBody String deleteFile(final HttpServletRequest httpServletRequest) {
 
-        return delete(reduce(path));
+    	final String fullPath = httpServletRequest.getRequestURI();
+    	
+        return delete(reduce(fullPath));
     }
 
     @DeleteMapping(path = "/", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)

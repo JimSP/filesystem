@@ -17,6 +17,6 @@ public class FileWactherWebHookAPI {
 	@ResponseStatus(code = HttpStatus.ACCEPTED)
 	@Log
 	public void notify(@RequestBody final NotifyDTO notifyDTO) {
-
+		throw new UnsupportedOperationException();
 	}
 }

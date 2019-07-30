@@ -3,12 +3,12 @@ package br.com.cafebinario.filesystem.api;
 import static br.com.cafebinario.filesystem.functions.Reduce.reduce;
 
 import java.net.URL;
-import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -23,16 +23,21 @@ public class FileSystemWatcherAPI {
 	@Autowired
 	private FilesService fileService;
 
-	@PutMapping(path = "/watcher/{path}", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@PutMapping(path = "/watcher/**", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@ResponseStatus(code = HttpStatus.ACCEPTED)
 	public void register(
-			@PathVariable(name = "path", required = false) final List<String> path,
+			final HttpServletRequest httpServletRequest,
 			@RequestBody final String host) {
 
 		final String[] hostNameAndPortNumber = host.split("[:]");
+		
 		final String hostName = hostNameAndPortNumber[0];
+		
 		final Integer portNumber = hostNameAndPortNumber.length > 1 ? Integer.valueOf(hostNameAndPortNumber[1]) : 0;
-		fileService.watcher(reduce(path), toUrl(hostName, portNumber));
+		
+		final String fullPath = httpServletRequest.getRequestURI();
+		
+		fileService.watcher(reduce(fullPath, "/watcher"), toUrl(hostName, portNumber));
 	}
 
 	@SneakyThrows
