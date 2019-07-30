@@ -155,7 +155,7 @@ public class FilesService {
     			.filter(Files::isRegularFile)
                 .map(mapperPath -> SearchDTO
     					.builder()
-    					.indexOf(indexOf(get(mapperPath), keyword))
+    					.indexOf(indexOf(new String(get(mapperPath).getData()), keyword))
     					.keywordString(keyword)
     					.keywordByteArray(keyword.getBytes())
     					.path(mapperPath.toAbsolutePath().toString())

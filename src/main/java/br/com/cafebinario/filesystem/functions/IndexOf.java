@@ -7,29 +7,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.primitives.Bytes;
 
-import br.com.cafebinario.filesystem.dtos.EntryDTO;
-
 public final class IndexOf {
 
-	public static Integer firstIndexOf(final EntryDTO entryDTO, final byte[] keyword) {
+	public static Integer firstIndexOf(final byte[] data, final byte[] keyword) {
 		
-		return Bytes.indexOf(entryDTO.getData(), keyword);
+		return Bytes.indexOf(data, keyword);
 	}
 	
 	
-	public static Integer firstIndexOf(final EntryDTO entryDTO, final String keyword) {
+	public static Integer firstIndexOf(final String data, final String keyword) {
 		
-		return new String(entryDTO.getData()).indexOf(keyword);
+		return data.indexOf(keyword);
 	}
 	
-	public static Integer lastIndexOf(final EntryDTO entryDTO, final String keyword) {
+	public static Integer lastIndexOf(final String data, final String keyword) {
 		
-		return new String(entryDTO.getData()).lastIndexOf(keyword);
+		return data.lastIndexOf(keyword);
 	}
 	
-	public static List<Integer> indexOf(final EntryDTO entryDTO, final String keyword) {
-		
-		final String data = new String(entryDTO.getData());
+	public static List<Integer> indexOf(final String data, final String keyword) {
 		
 		final List<Integer> indexes = new ArrayList<>();
 		
