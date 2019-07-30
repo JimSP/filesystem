@@ -1,6 +1,6 @@
 package br.com.cafebinario.filesystem.services;
 
-import static br.com.cafebinario.filesystem.functions.IndexOf.firstIndexOf;
+import static br.com.cafebinario.filesystem.functions.IndexOf.indexOf;
 import static br.com.cafebinario.filesystem.functions.Predicates.contains;
 
 import java.io.IOException;
@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,10 +59,12 @@ public class FilesService {
         try {
 
             final Path path = getPath(entryDTO.getPath());
+            
             create(path);
 
             return Files.write(path, entryDTO.getData()).toAbsolutePath().toString();
         } catch (IOException e) {
+        	
             throw new IllegalArgumentException(INVALID_VALUE + entryDTO.getPath());
         }
     }
@@ -76,6 +79,7 @@ public class FilesService {
             		.data(Files.readAllBytes(getPath(path)))
             		.build();
         } catch (IOException e) {
+        	
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
@@ -90,6 +94,7 @@ public class FilesService {
             		.data(Files.readAllBytes(path))
             		.build();
         } catch (IOException e) {
+        	
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
@@ -100,6 +105,7 @@ public class FilesService {
 
             return Files.deleteIfExists(getPath(path)) ? path : null;
         } catch (IOException e) {
+        	
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
@@ -111,6 +117,7 @@ public class FilesService {
             
             return pathStreamConverter(stream);
         } catch (IOException e) {
+        	
             throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
@@ -148,12 +155,12 @@ public class FilesService {
     			.filter(Files::isRegularFile)
                 .map(mapperPath -> SearchDTO
     					.builder()
-    					.indexOf(firstIndexOf(get(mapperPath), keyword))
+    					.indexOf(indexOf(get(mapperPath), keyword))
     					.keywordString(keyword)
     					.keywordByteArray(keyword.getBytes())
     					.path(mapperPath.toAbsolutePath().toString())
     					.build())
-                .filter(searchDTO->searchDTO.getIndexOf() > -1)
+                .filter(searchDTO->!searchDTO.getIndexOf().isEmpty())
                 .collect(Collectors.toList());
     }
 
@@ -168,17 +175,21 @@ public class FilesService {
         			.filter(Files::isRegularFile)
                     .map(mapperPath -> SearchDTO
         					.builder()
-        					.indexOf(firstIndexOf(get(mapperPath), keyword))
+        					.indexOf(indexOf(get(mapperPath).getData(), keyword))
         					.keywordByteArray(keyword)
         					.keywordString(new String(keyword))
         					.path(mapperPath.toAbsolutePath().toString())
         					.build())
-                    .filter(searchDTO->searchDTO.getIndexOf() > -1)
+                    .filter(searchDto -> !searchDto.getIndexOf().isEmpty())
                     .collect(Collectors.toList());
 
     	}else if(Files.isRegularFile(target)) {
     		
-    		final Integer indexOf = firstIndexOf(get(target), keyword);
+    		final List<Integer> indexOf = indexOf(get(target).getData(), keyword);
+    		
+    		if(indexOf.isEmpty()) {
+    			return Collections.emptyList();
+    		}
     		
     		return Arrays.asList(SearchDTO
 					.builder()
@@ -193,7 +204,7 @@ public class FilesService {
     }
 
     @Log
-    public Integer edit(final String path, final Integer position, final byte[] data) {
+    public Integer edit(final String path, final Integer indexOf, final byte[] data) {
 
         return edit(EditDTO
 	        		.builder()
@@ -202,7 +213,7 @@ public class FilesService {
 	                		Arrays.asList(
 	                				EditableEntryDTO
 	                        			.builder()
-	                        			.position(position)
+	                        			.indexOf(Arrays.asList(indexOf))
 	                        			.data(data)
 	                        			.build()))
 	                .build());
@@ -235,7 +246,6 @@ public class FilesService {
 
             return editableEntryDTOs
             		.stream()
-            		.filter(editableEntryDTO->editableEntryDTO.getPosition() > -1)
                     .map(editableEntryDTO -> edit(path, fc, editableEntryDTO))
                     .reduce((a, b) -> a + b)
                     .orElse(0);
@@ -268,7 +278,7 @@ public class FilesService {
         			.map(searchDTO -> edit(getPath(searchDTO.getPath()),
 						                    EditableEntryDTO
 					                    	.builder()
-					                    	.position(searchDTO.getIndexOf())
+					                    	.indexOf(searchDTO.getIndexOf())
 					                    	.data(updatableEntryDTO.getData())
 					                    	.build()))
         			.reduce((a, b) -> a + b)
@@ -303,7 +313,9 @@ public class FilesService {
     
     @SneakyThrows
     private void create(final Path path) {
+    	
         if(Files.notExists(path)) {
+        	
             Files.createFile(path);
         }
     }
@@ -327,13 +339,26 @@ public class FilesService {
     private Integer edit(final Path path, final FileChannel fc,
             final EditableEntryDTO editableEntryDTO) {
 
-        try {
-
-            fc.position(editableEntryDTO.getPosition());
-            return fc.write(ByteBuffer.wrap(editableEntryDTO.getData()));
-        } catch (IOException e) {
-            throw new IllegalArgumentException(INVALID_VALUE + path);
-        }
+    	return editableEntryDTO
+        		.getIndexOf()
+        		.stream()
+        		.filter(indexOf->indexOf > -1)
+        		.map(t -> {
+					try {
+						return fc.position(t);
+					} catch (IOException e) {
+						throw new IllegalArgumentException(INVALID_VALUE + path);
+					}
+				})
+        		.map(indexOf->{
+					try {
+						return fc.write(ByteBuffer.wrap(editableEntryDTO.getData()));
+					} catch (IOException e) {
+						throw new IllegalArgumentException(INVALID_VALUE + path);
+					}
+				})
+        		.reduce((a,b)->a + b)
+        		.orElse(0);
     }
 
     private void registerWatcher(final String path, final URL url) {
@@ -359,8 +384,10 @@ public class FilesService {
         final int indexOf = registredsPath.indexOf(path);
 
         if (indexOf > -1) {
+        	
             registredsPath.set(indexOf, path);
         } else {
+        	
             registredsPath.add(path);
         }
     }

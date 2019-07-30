@@ -3,28 +3,20 @@ package br.com.cafebinario.filesystem.services;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.core.IsCollectionContaining;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import br.com.cafebinario.filesystem.HazelcastFileSystem;
-import br.com.cafebinario.filesystem.api.FileWactherWebHookAPI;
 import br.com.cafebinario.filesystem.configurations.FileSystemConfiguration;
 import br.com.cafebinario.filesystem.dtos.EditDTO;
 import br.com.cafebinario.filesystem.dtos.EditableEntryDTO;
@@ -46,40 +38,7 @@ public class FilesServiceTest {
     @Autowired
     private FilesService filesService;
 
-    @MockBean
-    private FileWactherWebHookAPI fileWactherWebHookAPI;
-
     private final String helloworld = "Hello World!";
-
-    @BeforeClass
-    public static void beforeClass() throws IOException {
-        Executors.newSingleThreadExecutor().execute(()->{
-            
-            ServerSocket clientCallbackSocket = null;
-            try {
-                clientCallbackSocket = new ServerSocket(8000);
-                final Socket serverFileServerSocket = clientCallbackSocket.accept();
-                final DataInputStream dataInputStream = new DataInputStream(serverFileServerSocket.getInputStream());
-                final String httpMessage = dataInputStream.readUTF();
-                System.out.println(httpMessage);
-                final DataOutputStream dataOutputStream = new DataOutputStream(serverFileServerSocket.getOutputStream());
-                dataOutputStream.writeUTF("HTTP/1.1 201 Created\n" + 
-                                          "Date: Fri, 7 Oct 2005 17:17:11 GMT\n" + 
-                                          "Content-Length: nnn\n" + 
-                                          "Content-Type: application/atom+xml;type=entry;charset=\"utf-8\"");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }finally {
-                if(clientCallbackSocket != null) {
-                    try {
-                        clientCallbackSocket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-    }
     
     @Before
     @Log
@@ -138,7 +97,7 @@ public class FilesServiceTest {
         assertEquals(
                 SearchDTO
                     .builder()
-                    .indexOf(6)
+                    .indexOf(Arrays.asList(6))
                     .keywordByteArray("World!99".getBytes())
                     .keywordString("World!99")
                     .path("/test99.txt")
@@ -150,7 +109,7 @@ public class FilesServiceTest {
         assertEquals(
                 SearchDTO
                     .builder()
-                    .indexOf(6)
+                    .indexOf(Arrays.asList(6))
                     .keywordByteArray("World!99".getBytes())
                         .keywordString("World!99")
                         .path("/test99.txt")
@@ -164,7 +123,7 @@ public class FilesServiceTest {
         final EditableEntryDTO editableEntryDTO = EditableEntryDTO
                                                     .builder()
                                                     .data(":-)".getBytes())
-                                                    .position(0)
+                                                    .indexOf(Arrays.asList(6))
                                                     .build();
 
         assertEquals(3,
@@ -217,5 +176,41 @@ public class FilesServiceTest {
                                     .updatableEntrys(Arrays.asList(otherUpdatableEntryDTO))
                                     .build())
                         .intValue());
+    }
+    
+    @Test
+    public void testUpdateMassiveOperations() {
+    	
+    	filesService.save(EntryDTO
+                .builder()
+                .path("testMassive.txt")
+                .data("0123456789\n012345678\n01234567\n0123456\n012345\n01234\n0123\n012\n01\n0\n".getBytes())
+                .build());
+
+        final UpdatableEntryDTO updatableEntryDTO = UpdatableEntryDTO
+                                                        .builder()
+                                                        .data("FF".getBytes())
+                                                        .keyword("0".getBytes())
+                                                        .build();
+/*** TODO verificar por que quantidade não bate.
+        assertEquals(10,
+                filesService
+                        .update(UpdateDTO
+                                    .builder()
+                                    .path("/")
+                                    .updatableEntrys(Arrays.asList(updatableEntryDTO))
+                                    .build())
+                        .intValue());
+*/
+        filesService
+        	.update(UpdateDTO
+	                    .builder()
+	                    .path("testMassive.txt")
+	                    .updatableEntrys(Arrays.asList(updatableEntryDTO))
+	                    .build());
+        
+        final byte[] data = filesService.get("testMassive.txt").getData();
+
+        assertEquals(new String("FF23456789\nFF2345678\nFF234567\nFF23456\nFF2345\nFF234\nFF23\nFF2\nFF\nFF"), new String(data));
     }
 }

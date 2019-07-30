@@ -1,5 +1,7 @@
 package br.com.cafebinario.filesystem.dtos;
 
+import java.util.List;
+
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
@@ -13,13 +15,13 @@ public class EditableEntryDTO {
 
 	@NotNull
 	@PositiveOrZero
-	private final Integer position;
+	private final List<Integer> indexOf;
 	
 	@NotEmpty
 	private final byte[] data;
 	
-	public EditableEntryDTO(final Integer position, final byte[] data) {
-		this.position = position;
+	public EditableEntryDTO(final List<Integer> indexOf, final byte[] data) {
+		this.indexOf = indexOf;
 		this.data = data;
 	}
 }
