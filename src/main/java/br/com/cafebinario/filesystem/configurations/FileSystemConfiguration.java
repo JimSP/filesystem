@@ -1,7 +1,11 @@
 package br.com.cafebinario.filesystem.configurations;
 
 import java.io.File;
+import java.net.Inet4Address;
+import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 
 import org.apache.ftpserver.FtpServer;
 import org.apache.ftpserver.FtpServerFactory;
@@ -16,6 +20,7 @@ import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory;
 import org.apache.ftpserver.usermanager.SaltedPasswordEncryptor;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,36 +42,45 @@ public class FileSystemConfiguration {
     private static final String DEFAULT_ADMIN_SETTINGS = "admin";
     private static final String HAZEL_FS = "hazelfs";
     private static final String HAZEL_ROOTS = "hazelRoots";
-
+    
     @Bean
     public UserManager userManager() throws FtpException {
         
         final PropertiesUserManagerFactory userManagerFactory = new PropertiesUserManagerFactory();
+        
         final UserManager um = userManagerFactory.createUserManager();
+        
         final BaseUser user = new BaseUser();
 
         userManagerFactory.setFile(new File("admin.properties"));
+        
         userManagerFactory.setPasswordEncryptor(new SaltedPasswordEncryptor());
 
         user.setName(DEFAULT_ADMIN_SETTINGS);
+        
         user.setPassword(DEFAULT_ADMIN_SETTINGS);
+        
         user.setHomeDirectory(DEFAULT_ADMIN_SETTINGS);
+        
         um.save(user);
 
         return um;
     }
 
     @Bean
-    public ListenerFactory listenerFactory(@Value("${ftpServer.port:6921}") final Integer ftpPort) {
+    public ListenerFactory listenerFactory(@Value("${ftpServer.port:6921}") final Integer ftpPort) throws UnknownHostException {
         
         final ListenerFactory listenerFactory = new ListenerFactory();
         
+        listenerFactory.setServerAddress(Inet4Address.getLocalHost().getHostAddress());
+        
         listenerFactory.setPort(ftpPort);
+        
         
         return listenerFactory;
     }
 
-    @Bean(destroyMethod = "stop")
+    @Bean(initMethod="start", destroyMethod = "stop")
     public FtpServer ftpServer(
             @Autowired final UserManager userManager,
             @Autowired final ListenerFactory listenerFactory,
@@ -84,12 +98,8 @@ public class FileSystemConfiguration {
         final CommandFactory commandFactory = serverFactory.getCommandFactory();
         
         serverFactory.setCommandFactory(commandFactory);
-        
-        final FtpServer ftpServer = serverFactory.createServer();
 
-        ftpServer.start();
-
-        return ftpServer;
+        return serverFactory.createServer();
     }
 
     @Bean
@@ -114,7 +124,13 @@ public class FileSystemConfiguration {
     		@Autowired final FileSystem fileSystem,
             @Autowired final PathToFtpFileMapper pathToFtpFileMapper) {
 
-        return user -> new FileSystemView() {
+        return newFileSystemFactory(fileSystem, pathToFtpFileMapper);
+    }
+
+	private FileSystemFactory newFileSystemFactory(final FileSystem fileSystem,
+			final PathToFtpFileMapper pathToFtpFileMapper) {
+		
+		return user -> new FileSystemView() {
 
             @Override
             public boolean isRandomAccessible() throws FtpException {
@@ -152,17 +168,25 @@ public class FileSystemConfiguration {
                 return false;
             }
         };
-    }
+	}
 
-    @Bean
+    @Bean(destroyMethod="close")
     public FileSystem fileSystem(@Autowired final HazelcastInstance hazelcastInstance) {
 
-        return Jimfs.newFileSystem(HAZEL_FS, com.google.common.jimfs.Configuration.unix(),
-                hazelcastInstance.getMap(HAZEL_ROOTS));
+    	try {
+    		
+    		return FileSystems.getFileSystem(URI.create("jimfs://hazelfs"));
+    	}catch (Exception e) {
+    		
+    		return Jimfs.newFileSystem(HAZEL_FS, com.google.common.jimfs.Configuration.unix(),
+                    hazelcastInstance.getMap(HAZEL_ROOTS));
+		}
+        
     }
     
     @Bean(initMethod="start", destroyMethod="close")
     public FileWatcher fileWatcher(@Autowired final FileSystem fileSystem) {
+    	
     	return FileWatcher.of(fileSystem);
     }
 }
