@@ -31,7 +31,6 @@ import br.com.cafebinario.filesystem.dtos.NotifyDTO;
 import br.com.cafebinario.filesystem.dtos.SearchDTO;
 import br.com.cafebinario.filesystem.dtos.UpdatableEntryDTO;
 import br.com.cafebinario.filesystem.dtos.UpdateDTO;
-import br.com.cafebinario.filesystem.functions.Predicates;
 import br.com.cafebinario.filesystem.listener.FileSystemWatcherEventMessageListener;
 import br.com.cafebinario.logger.Log;
 import br.com.cafebinario.logger.LogLevel;
@@ -55,70 +54,51 @@ public class FilesService {
     private FileSystemWatcherEventMessageListener fileSystemWatcherEventMessageListener;
 
     @Log
+    @SneakyThrows
     public String save(final EntryDTO entryDTO) {
-        try {
 
-            final Path path = getPath(entryDTO.getPath());
-            
-            create(path);
+    	final Path path = getPath(entryDTO.getPath());
+        
+        create(path);
 
-            return Files.write(path, entryDTO.getData()).toAbsolutePath().toString();
-        } catch (IOException e) {
-        	
-            throw new IllegalArgumentException(INVALID_VALUE + entryDTO.getPath());
-        }
+        return Files.write(path, entryDTO.getData()).toAbsolutePath().toString();
     }
 
     @Log
+    @SneakyThrows
     public EntryDTO get(final String path) {
-        try {
-
-            return EntryDTO
-            		.builder()
-            		.path(path)
-            		.data(Files.readAllBytes(getPath(path)))
-            		.build();
-        } catch (IOException e) {
-        	
-            throw new IllegalArgumentException(INVALID_VALUE + path);
-        }
+        
+    	return EntryDTO
+        		.builder()
+        		.path(path)
+        		.data(Files.readAllBytes(getPath(path)))
+        		.build();
     }
     
     @Log
+    @SneakyThrows
     public EntryDTO get(final Path path) {
-        try {
-
-            return EntryDTO
-            		.builder()
-            		.path(path.toAbsolutePath().toString())
-            		.data(Files.readAllBytes(path))
-            		.build();
-        } catch (IOException e) {
-        	
-            throw new IllegalArgumentException(INVALID_VALUE + path);
-        }
+        
+    	return EntryDTO
+        		.builder()
+        		.path(path.toAbsolutePath().toString())
+        		.data(Files.readAllBytes(path))
+        		.build();
     }
 
     @Log
+    @SneakyThrows
     public String delete(final String path) {
-        try {
-
-            return Files.deleteIfExists(getPath(path)) ? path : null;
-        } catch (IOException e) {
-        	
-            throw new IllegalArgumentException(INVALID_VALUE + path);
-        }
+    	return Files.deleteIfExists(getPath(path)) ? path : null;
     }
 
     @Log
+    @SneakyThrows
     public List<String> list(final String path) {
 
         try (final Stream<Path> stream = Files.list(getPath(path))) {
             
             return pathStreamConverter(stream);
-        } catch (IOException e) {
-        	
-            throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
 
@@ -133,7 +113,7 @@ public class FilesService {
 
     	return list(getPath(path))
     			.filter(Files::isRegularFile)
-    			.filter(predicatePath -> Predicates.contains(get(predicatePath), keyword))
+    			.filter(predicatePath -> contains(get(predicatePath), keyword))
     			.map(mapperPath -> mapperPath.toAbsolutePath().toString())
     			.collect(Collectors.toList());
     }
@@ -143,7 +123,7 @@ public class FilesService {
 
     	return list(getPath(path))
     			.filter(Files::isRegularFile)
-    			.filter(predicatePath -> Predicates.contains(get(predicatePath), keyword))
+    			.filter(predicatePath -> contains(get(predicatePath), keyword))
     			.map(mapperPath -> mapperPath.toAbsolutePath().toString())
     			.collect(Collectors.toList());
     }
@@ -239,6 +219,7 @@ public class FilesService {
     }
 
     @Log
+    @SneakyThrows
     public Integer edit(final Path path, final List<EditableEntryDTO> editableEntryDTOs) {
 
         try (final FileChannel fc = FileChannel.open(path, StandardOpenOption.READ,
@@ -250,8 +231,6 @@ public class FilesService {
                     .reduce((a, b) -> a + b)
                     .orElse(0);
 
-        } catch (IOException ex) {
-            throw new IllegalArgumentException(INVALID_VALUE + path);
         }
     }
 
@@ -333,7 +312,10 @@ public class FilesService {
 
     private List<String> pathStreamConverter(final Stream<Path> stream) {
 
-        return stream.map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toList());
+        return stream
+        		.map(Path::toAbsolutePath)
+        		.map(Path::toString)
+        		.collect(Collectors.toList());
     }
 
     private Integer edit(final Path path, final FileChannel fc,
@@ -343,23 +325,23 @@ public class FilesService {
         		.getIndexOf()
         		.stream()
         		.filter(indexOf->indexOf > -1)
-        		.map(t -> {
-					try {
-						return fc.position(t);
-					} catch (IOException e) {
-						throw new IllegalArgumentException(INVALID_VALUE + path);
-					}
-				})
-        		.map(indexOf->{
-					try {
-						return fc.write(ByteBuffer.wrap(editableEntryDTO.getData()));
-					} catch (IOException e) {
-						throw new IllegalArgumentException(INVALID_VALUE + path);
-					}
-				})
+        		.map(t -> positionOf(path, fc, t))
+        		.map(indexOf->write(path, fc, editableEntryDTO))
         		.reduce((a,b)->a + b)
         		.orElse(0);
     }
+
+    @SneakyThrows
+	private Integer write(final Path path, final FileChannel fc, final EditableEntryDTO editableEntryDTO) {
+    	
+		return fc.write(ByteBuffer.wrap(editableEntryDTO.getData()));
+	}
+
+    @SneakyThrows
+	private FileChannel positionOf(final Path path, final FileChannel fc, Integer t) {
+    	
+    	return fc.position(t);
+	}
 
     private void registerWatcher(final String path, final URL url) {
 

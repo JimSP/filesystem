@@ -31,6 +31,7 @@ public class FileSystemWatcherEventMessageListener implements MessageListener<No
 
     @Log(verboseMode=VerboseMode.ON, logLevel=LogLevel.ERROR)
     public boolean sendHttpRequestForceLogVerboseModeON(final NotifyDTO notifyDTO) {
+    	
 		return false;
 	}
 }

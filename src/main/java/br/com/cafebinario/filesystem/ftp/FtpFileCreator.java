@@ -33,7 +33,9 @@ public final class FtpFileCreator {
             public boolean setLastModified(final long time) {
                 
                 if (isBeforeTime(time)) {
+                	
                     this.time.set(time);
+                    
                     return true;
                 }
 
@@ -107,8 +109,10 @@ public final class FtpFileCreator {
             public boolean isHidden() {
 
                 try {
+                	
                     return Files.isHidden(getPath());
                 } catch (IOException e) {
+                	
                    return false;
                 }
             }
@@ -139,12 +143,15 @@ public final class FtpFileCreator {
 
             @Override
             public Object getPhysicalFile() {
+            	
                 final long size = getSize();
                 
                 final byte[] buffer = new byte[(int) size];
                 
                 try(final InputStream inputStream = Files.newInputStream(getPath())) {
+                	
                     inputStream.read(buffer);
+                    
                     return buffer;
                 } catch (IOException e) {
                    return new byte[0];
@@ -155,6 +162,7 @@ public final class FtpFileCreator {
             public String getOwnerName() {
 
                 try {
+                	
                     return Files.getOwner(getPath()).getName();
                 } catch (IOException e) {
                     return "";
@@ -175,6 +183,7 @@ public final class FtpFileCreator {
 
             @Override
             public long getLastModified() {
+            	
                 return time.get();
             }
 
@@ -200,6 +209,7 @@ public final class FtpFileCreator {
             public boolean delete() {
 
                 try {
+                	
                     return Files.deleteIfExists(getPath());
                 } catch (IOException e) {
                     return false;
@@ -219,6 +229,7 @@ public final class FtpFileCreator {
             }
             
             private boolean isBeforeTime(final long time) {
+            	
 				return this.time.get() < time;
 			}
         };

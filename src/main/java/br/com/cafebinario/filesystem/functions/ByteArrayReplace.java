@@ -37,6 +37,7 @@ public final class ByteArrayReplace {
 		}
 
 		ByteBuffer dest = null;
+		
 		if (replacement == null || replacement.length != pattern.length) {
 			
 			int newLength = replace(src, offset, length, pattern, replacement, null);
@@ -54,6 +55,7 @@ public final class ByteArrayReplace {
 		}
 		
 		replace(src, offset, length, pattern, replacement, dest);
+		
 		return dest != null ? dest.array() : new byte[0];
 	}
 
@@ -93,6 +95,7 @@ public final class ByteArrayReplace {
 						dest.put(replacement);
 					}
 				}
+				
 				newLength += currentPosition - lastPosition + replacementLength;
 				
 				currentPosition += pattern.length;

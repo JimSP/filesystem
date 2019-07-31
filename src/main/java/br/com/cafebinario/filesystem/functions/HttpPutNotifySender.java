@@ -38,6 +38,7 @@ public final class HttpPutNotifySender {
 
     @SneakyThrows
     private static OutputStream getOutputStream(final URLConnection urlConnection) {
+    	
         return urlConnection.getOutputStream();
     }
 
@@ -51,7 +52,9 @@ public final class HttpPutNotifySender {
             final OutputStream outputStream) {
 
         outputStream.write(new ObjectMapper().writeValueAsBytes(content));
+        
         final int responseCode = urlConnection.getResponseCode();
+        
         return HttpStatus.resolve(responseCode).is2xxSuccessful();
     }
 
@@ -62,8 +65,11 @@ public final class HttpPutNotifySender {
         
         
         urlConnection.setRequestMethod(METHOD);
+        
         urlConnection.setRequestProperty(CONTENT_TYPE, APPLICATION_JSON_CHARSET_UTF_8);
+        
         urlConnection.setDoOutput(true);
+        
         urlConnection.connect();
 
         return urlConnection;

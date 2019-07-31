@@ -26,14 +26,17 @@ public final class FileWatcher implements Closeable {
 	private static final int QTY_THREADS = 5;
 
 	public static FileWatcher of(final FileSystem fileSystem) {
+		
 		return new FileWatcher(fileSystem);
 	}
 
 	public static FileWatcher of(final FileSystem fileSystem, final Integer qtyThreads) {
+		
 		return new FileWatcher(fileSystem, qtyThreads);
 	}
 
 	public static FileWatcher of(final FileSystem fileSystem, final ExecutorService executorService) {
+		
 		return new FileWatcher(fileSystem, executorService);
 	}
 
@@ -47,15 +50,19 @@ public final class FileWatcher implements Closeable {
 
 	@SneakyThrows
 	private FileWatcher(final FileSystem fileSystem, final ExecutorService executorService) {
+		
 		this.executorService = executorService;
+		
 		this.watchService = fileSystem.newWatchService();
 	}
 
 	private FileWatcher(final FileSystem fileSystem) {
+		
 		this(fileSystem, Executors.newFixedThreadPool(QTY_THREADS));
 	}
 
 	private FileWatcher(final FileSystem fileSystem, final Integer qtyThreads) {
+		
 		this(fileSystem, Executors.newFixedThreadPool(qtyThreads));
 	}
 
@@ -83,7 +90,8 @@ public final class FileWatcher implements Closeable {
 				StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY,
 				StandardWatchEventKinds.OVERFLOW);
 
-		pathConsumerMap.put(path, KeyConsumerEntry
+		pathConsumerMap
+			.put(path, KeyConsumerEntry
 				.builder()
 				.watchKey(watchKey)
 				.consumer(fileConsumer)
@@ -102,8 +110,11 @@ public final class FileWatcher implements Closeable {
 
 		log.info("m:pooling");
 
-		watchService.take().pollEvents().stream()
-				.forEach(action -> executorService.submit(() -> dispacherEvent(action)));
+		watchService
+			.take()
+			.pollEvents()
+			.stream()
+			.forEach(action -> executorService.submit(() -> dispacherEvent(action)));
 	}
 
 	private void dispacherEvent(final WatchEvent<?> wathEvent) {
@@ -112,24 +123,24 @@ public final class FileWatcher implements Closeable {
 
 		try {
 
-			pathConsumerMap.entrySet().stream().forEach(keyConsumerEntry -> {
-				log.info("m:dispacherEvent, step:accept, wathEvent:{}", wathEvent);
+			pathConsumerMap
+				.entrySet()
+				.stream()
+				.forEach(keyConsumerEntry -> {
+				
+					log.info("m:dispacherEvent, step:accept, wathEvent:{}", wathEvent);
 
-				final BiConsumer<WatcherEvent, String> consumer = keyConsumerEntry
-						.getValue()
-						.getConsumer();
+					final BiConsumer<WatcherEvent, String> consumer = keyConsumerEntry
+							.getValue()
+							.getConsumer();
 
-				consumer.accept(WatcherEvent
-						.builder()
-						.event(wathEvent
-								.kind()
-								.name())
-						.path(wathEvent
-								.context()
-								.toString())
-						.build(), keyConsumerEntry
-						.getKey()
-						.toString());
+					consumer
+						.accept(WatcherEvent
+									.builder()
+									.event(wathEvent.kind().name())
+									.path(wathEvent.context().toString())
+									.build(),
+								keyConsumerEntry.getKey().toString());
 			});
 
 		} catch (Exception e) {
