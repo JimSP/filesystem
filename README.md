@@ -6,10 +6,19 @@ Escalavel verticalmente e horizontalente, permite replicação de dados em tempo
 
 Alta-perfomance e alta-disponibilidade para arquivos.
 
-Interface Rest e FTP.
+Interface FTP.
 
-Permite pesquisa com palavras chaves e parte de conteudo multimedia.
+Interface Rest:
 
+	+ criação de arquivos e diretórios.
+	+ sobrescrita de arquivos.
+	+ permite listar paths (arquivos e diretórios).
+	+ busca de paths com palavra chave (contains).
+	+ pesquisa com palavras chaves e parte de conteúdo multimedia.
+	+ edição de documentos.
+	+ edição de documentos em lote.
+	+ indexação de conteúdo.
+	
 Monitoramento de arquivos através de notificações por webhook com eventos de criação, alteração, delete e sobrescrita de arquivos.
 
 ![Optional Text](cafebinario_vfs.png)
