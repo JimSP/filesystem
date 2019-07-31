@@ -8,14 +8,15 @@ Alta-perfomance e alta-disponibilidade para arquivos.
 
 Interface Rest e FTP.
 
-Permite pesquisa com palavras chaves e parte de conteudo multi-midia.
+Permite pesquisa com palavras chaves e parte de conteudo multimedia.
+
+Monitoramento de arquivos através de notificações por webhook com eventos de criação, alteração, delete e sobrescrita de arquivos.
 
 ![Optional Text](cafebinario_vfs.png)
 
 
 ## Road map:
 
-	+ implementação de FileWacther com mecanismo de notificação por webhook através de topicos.
 	+ implementação de controle de acesso RBAC com LDAP
 	+ integração com document-propagation
 	+ integração com apache-mina sshd
