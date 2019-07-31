@@ -3,7 +3,6 @@ package br.com.cafebinario.filesystem.services;
 import static br.com.cafebinario.filesystem.functions.IndexOf.indexOf;
 import static br.com.cafebinario.filesystem.functions.Predicates.contains;
 
-import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
